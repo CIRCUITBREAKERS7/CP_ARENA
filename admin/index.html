@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- admin v2: test case management -->
+  <title>Admin Panel — CP Arena</title>
+  <meta name="description" content="Admin dashboard for managing problems and reviewing submissions." />
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <style>
+    .admin-grid {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 24px;
+      min-height: calc(100vh - 64px - 80px);
+      padding: 32px 0;
+    }
+    @media (max-width: 768px) { .admin-grid { grid-template-columns: 1fr; } }
+
+    /* Sidebar */
+    .admin-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .sidebar-section {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 12px;
+      margin-top: 8px;
+    }
+    .sidebar-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: none;
+      border: none;
+      width: 100%;
+      text-align: left;
+      padding: 9px 12px;
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      border: 1px solid transparent;
+    }
+    .sidebar-btn:hover { background: var(--bg-elevated); color: var(--text-1); }
+    .sidebar-btn.active { background: var(--green-dimmer); color: var(--green); border-color: var(--border); }
+    .sidebar-btn .icon { width: 16px; text-align: center; }
+
+    /* Pending badge */
+    .pending-count {
+      margin-left: auto;
+      background: var(--pending);
+      color: var(--bg-base);
+      border-radius: 50px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 1px 7px;
+      line-height: 1.4;
+    }
+
+    /* Content area */
+    .admin-content { display: flex; flex-direction: column; gap: 24px; }
+    .admin-section { display: none; }
+    .admin-section.active { display: flex; flex-direction: column; gap: 20px; }
+
+    /* Stats row */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    @media (max-width: 900px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Problem management */
+    .prob-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Review cards */
+    .review-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(12px);
+      overflow: hidden;
+    }
+    .review-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-muted);
+      flex-wrap: wrap;
+    }
+    .review-meta { flex: 1; }
+    .review-meta .rm-user { font-family: var(--font-mono); font-weight: 700; color: var(--text-1); font-size: 0.9rem; }
+    .review-meta .rm-problem { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-3); }
+    .review-meta .rm-time { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-3); }
+    .review-actions-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .review-code-wrap {
+      background: #060b1a;
+      padding: 14px 18px;
+      max-height: 160px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-code);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Problem form */
+    .prob-form { display: flex; flex-direction: column; gap: 18px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } }
+
+    /* Example builder */
+    .example-item {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-muted);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+    .remove-example {
+      position: absolute;
+      top: 8px; right: 8px;
+      background: none;
+      border: none;
+      color: var(--hard);
+      font-size: 0.9rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 5px;
+    }
+    .remove-example:hover { background: rgba(255,71,87,0.1); }
+
+    /* Users table */
+    .user-role-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 50px;
+    }
+    .role-admin { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,71,87,0.25); }
+    .role-student { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(0,180,255,0.2); }
+
+    /* Change password */
+    .pass-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      max-width: 400px;
+    }
+
+    /* Admin login gate */
+    #admin-gate {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-base);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    #admin-gate.hidden { display: none; }
+    .gate-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 36px;
+      width: 100%;
+      max-width: 380px;
+      backdrop-filter: blur(20px);
+      text-align: center;
+    }
+    .gate-title {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--green);
+      margin-bottom: 6px;
+    }
+    .gate-sub { font-size: 0.85rem; color: var(--text-3); margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+  <!-- Admin Gate -->
+  <div id="admin-gate">
+    <div class="gate-card anim-fade-up">
+      <div class="gate-title">// Admin Access</div>
+      <p class="gate-sub">Sign in to manage the CP Arena platform.</p>
+      <form onsubmit="doAdminLogin(event)" style="display:flex;flex-direction:column;gap:12px;text-align:left">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input id="gate-user" class="form-input" type="text" value="admin" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input id="gate-pass" class="form-input" type="password" placeholder="••••••••" required />
+        </div>
+        <div id="gate-error" style="color:var(--hard);font-family:var(--font-mono);font-size:0.8rem;display:none"></div>
+        <button class="btn btn-primary" type="submit" style="width:100%">Login as Admin</button>
+      </form>
+      <div style="margin-top:16px;text-align:center">
+        <a href="../index.html" style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-3)">← Back to main site</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="../index.html" class="nav-logo">
+        <span class="bracket">[</span><span class="logo-text">CP_ARENA</span><span class="bracket">]</span>
+      </a>
+      <div class="nav-links">
+        <a href="../problems.html" class="nav-link">Problem Set</a>
+        <a href="../leaderboard.html" class="nav-link">Leaderboard</a>
+        <a href="index.html" class="nav-link active">Admin</a>
+      </div>
+      <div class="nav-right" id="nav-right"></div>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+    <div class="container">
+      <div class="admin-grid">
+
+        <!-- SIDEBAR -->
+        <div class="admin-sidebar">
+          <div class="sidebar-section">Dashboard</div>
+          <button class="sidebar-btn active" id="sb-overview" onclick="showSection('overview')"><span class="icon">◈</span> Overview</button>
+
+          <div class="sidebar-section">Problems</div>
+          <button class="sidebar-btn" id="sb-problems" onclick="showSection('problems')"><span class="icon">⊞</span> All Problems</button>
+          <button class="sidebar-btn" id="sb-add" onclick="showSection('add')"><span class="icon">+</span> Add Problem</button>
+
+          <div class="sidebar-section">Submissions</div>
+          <button class="sidebar-btn" id="sb-review" onclick="showSection('review')">
+            <span class="icon">⚑</span> Pending Review
+            <span class="pending-count" id="pending-badge" style="display:none">0</span>
+          </button>
+          <button class="sidebar-btn" id="sb-all-subs" onclick="showSection('all-subs')"><span class="icon">≡</span> All Submissions</button>
+
+          <div class="sidebar-section">Users</div>
+          <button class="sidebar-btn" id="sb-users" onclick="showSection('users')"><span class="icon">⊛</span> Users</button>
+
+          <div class="sidebar-section">Settings</div>
+          <button class="sidebar-btn" id="sb-settings" onclick="showSection('settings')"><span class="icon">⚙</span> Settings</button>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="admin-content">
+
+          <!-- ── OVERVIEW ── -->
+          <div class="admin-section active" id="sec-overview">
+            <div>
+              <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--green);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">// overview</div>
+              <h2 style="font-size:1.4rem">Dashboard</h2>
+            </div>
+            <div class="stats-row" id="overview-stats"></div>
+
+            <!-- Quick pending preview -->
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <h3 style="font-size:0.95rem;font-family:var(--font-mono)">// Pending Submissions</h3>
+                <button class="btn btn-ghost btn-sm" onclick="showSection('review')">View All →</button>
+              </div>
+              <div id="overview-pending"></div>
+            </div>
+          </div>
+
+          <!-- ── ALL PROBLEMS ── -->
+          <div class="admin-section" id="sec-problems">
+            <div class="prob-actions">
+              <div>
+                <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--green);margin-bottom:4px">// problem_set</div>
+                <h2 style="font-size:1.2rem">All Problems</h2>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="showSection('add')">+ Add Problem</button>
+            </div>
+            <div class="table-wrap" id="problems-table-wrap"></div>
+          </div>
+
+          <!-- ── ADD / EDIT PROBLEM ── -->
+          <div class="admin-section" id="sec-add">
+            <div>
+              <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--green);margin-bottom:4px" id="add-pre">// add_problem</div>
+              <h2 style="font-size:1.2rem" id="add-title">Add New Problem</h2>
+            </div>
+            <div class="card">
+              <div class="card-body">
+                <form class="prob-form" id="prob-form" onsubmit="saveProblem(event)">
+                  <input type="hidden" id="edit-problem-id" />
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Title <span class="req">*</span></label>
+                      <input id="p-title" class="form-input" type="text" placeholder="Problem title" required />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Difficulty <span class="req">*</span></label>
+                      <select id="p-diff" class="form-select" required>
+                        <option value="Easy">Easy (10 pts)</option>
+                        <option value="Medium">Medium (25 pts)</option>
+                        <option value="Hard">Hard (50 pts)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Time Limit</label>
+                      <input id="p-timelimit" class="form-input" type="text" placeholder="e.g. 1 second" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Memory Limit</label>
+                      <input id="p-memlimit" class="form-input" type="text" placeholder="e.g. 256 MB" />
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Tags <span style="color:var(--text-3)">(comma-separated)</span></label>
+                    <input id="p-tags" class="form-input" type="text" placeholder="Array, Hash Table, Sliding Window" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Problem Description <span class="req">*</span> <span style="color:var(--text-3)">(Markdown supported)</span></label>
+                    <textarea id="p-desc" class="form-textarea" style="min-height:200px" placeholder="## Problem Statement&#10;&#10;Describe the problem here..." required></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Constraints <span style="color:var(--text-3)">(one per line)</span></label>
+                    <textarea id="p-constraints" class="form-textarea" style="min-height:80px" placeholder="- 1 <= n <= 10^5&#10;- -10^9 <= nums[i] <= 10^9"></textarea>
+                  </div>
+
+                  <!-- Examples -->
+                  <div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                      <label class="form-label" style="margin:0">Examples <span style="color:var(--text-3);font-weight:400">(shown to student)</span></label>
+                      <button type="button" class="btn btn-ghost btn-sm" onclick="addExample()">+ Add Example</button>
+                    </div>
+                    <div id="examples-list" style="display:flex;flex-direction:column;gap:10px"></div>
+                  </div>
+                  <!-- Test Cases -->
+                  <div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                      <label class="form-label" style="margin:0">Test Cases <span style="color:var(--green);font-weight:400">(used for auto-judging)</span></label>
+                      <button type="button" class="btn btn-outline btn-sm" onclick="addTestCase()">+ Add Test Case</button>
+                    </div>
+                    <p style="font-family:var(--font-mono);font-size:.75rem;color:var(--text-3);margin-bottom:10px">Input = stdin, Output = expected stdout. Hidden cases not shown to students.</p>
+                    <div id="testcases-list" style="display:flex;flex-direction:column;gap:10px"></div>
+                  </div>
+
+                  <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <button type="submit" class="btn btn-primary" id="save-prob-btn">Save Problem</button>
+                    <button type="button" class="btn btn-ghost" onclick="resetProbForm()">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── PENDING REVIEW ── -->
+          <div class="admin-section" id="sec-review">
+            <div>
+              <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--green);margin-bottom:4px">// pending_review</div>
+              <h2 style="font-size:1.2rem">Pending Submissions</h2>
+              <p style="font-size:0.85rem;color:var(--text-3);margin-top:4px">Review student code and set the verdict.</p>
+            </div>
+            <div id="pending-list"></div>
+          </div>
+
+          <!-- ── ALL SUBMISSIONS ── -->
+          <div class="admin-section" id="sec-all-subs">
+            <div>
+              <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--green);margin-bottom:4px">// all_submissions</div>
+              <h2 style="font-size:1.2rem">All Submissions</h2>
+            </div>
+            <div class="table-wrap" id="all-subs-table"></div>
+          </div>
+
+          <!-- ── USERS ── -->
+          <div class="admin-section" id="sec-users">
+            <div>
+              <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--green);margin-bottom:4px">// users</div>
+              <h2 style="font-size:1.2rem">Registered Users</h2>
+            </div>
+            <div class="table-wrap" id="users-table"></div>
+          </div>
+
+          <!-- ── SETTINGS ── -->
+          <div class="admin-section" id="sec-settings">
+            <div>
+              <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--green);margin-bottom:4px">// settings</div>
+              <h2 style="font-size:1.2rem">Settings</h2>
+            </div>
+            <div class="pass-box">
+              <h3 style="font-family:var(--font-mono);font-size:0.9rem;margin-bottom:14px;color:var(--text-1)">Change Admin Password</h3>
+              <div class="form-group" style="margin-bottom:14px">
+                <label class="form-label">New Password</label>
+                <input id="new-pass" class="form-input" type="password" placeholder="min 6 characters" />
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="changeAdminPass()">Update Password</button>
+            </div>
+            <div class="pass-box" style="margin-top:0">
+              <h3 style="font-family:var(--font-mono);font-size:0.9rem;margin-bottom:14px;color:var(--hard)">Danger Zone</h3>
+              <p style="font-size:0.82rem;color:var(--text-3);margin-bottom:12px">Permanently delete all submissions. Problems and users are preserved.</p>
+              <button class="btn btn-danger btn-sm" onclick="clearSubmissions()">Clear All Submissions</button>
+            </div>
+          </div>
+
+        </div><!-- /admin-content -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Code view modal -->
+  <div class="modal-overlay hidden" id="code-modal">
+    <div class="modal" style="max-width:760px">
+      <div class="modal-header">
+        <span class="modal-title" id="code-modal-title">// Submitted Code</span>
+        <button class="modal-close" onclick="closeCodeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <pre style="background:#060b1a;border-radius:8px;padding:16px;overflow-x:auto;font-family:var(--font-mono);font-size:0.82rem;color:var(--text-code);max-height:60vh;overflow-y:auto" id="code-modal-content"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete confirm modal -->
+  <div class="modal-overlay hidden" id="del-modal">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-header">
+        <span class="modal-title" style="color:var(--hard)">// Confirm Delete</span>
+        <button class="modal-close" onclick="document.getElementById('del-modal').classList.add('hidden')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-2);font-size:0.9rem" id="del-msg">Delete this item?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('del-modal').classList.add('hidden')">Cancel</button>
+        <button class="btn btn-danger btn-sm" id="del-confirm-btn">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="../js/store.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    /* ── AUTH GATE ── */
+    let adminUser = null;
+
+    (function () {
+      // Fix any stale users data first
+      const users = Store.getUsers();
+      users.forEach((u, i) => {
+        if (u.username === 'admin') users[i].role = 'admin';
+      });
+      Store._saveUsers(users);
+
+      // Fix current session
+      let u = Store.getCurrentUser();
+      if (u && u.username === 'admin') u.role = 'admin';
+
+      // Gate check: username must be 'admin' (most reliable check)
+      if (!u || u.username !== 'admin') {
+        document.getElementById('admin-gate').classList.remove('hidden');
+      } else {
+        adminUser = u;
+        document.getElementById('admin-gate').classList.add('hidden');
+        init();
+      }
+    })();
+
+    function doAdminLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('gate-user').value.trim();
+      const password = document.getElementById('gate-pass').value;
+      const errEl = document.getElementById('gate-error');
+      errEl.style.display = 'none';
+
+      // Find user
+      const user = Store.getUserByName(username) || Store.getUserByEmail(username);
+      if (!user || user.password !== password) {
+        errEl.textContent = '// ERROR: Invalid username or password.';
+        errEl.style.display = 'block';
+        return;
+      }
+      if (user.username !== 'admin') {
+        errEl.textContent = '// ERROR: This account does not have admin privileges.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      // Fix role and log in
+      user.role = 'admin';
+      const users = Store.getUsers();
+      const idx = users.findIndex(u => u.id === user.id);
+      if (idx >= 0) { users[idx].role = 'admin'; Store._saveUsers(users); }
+      Store.setCurrentUser(user);
+
+      // Enter admin panel
+      adminUser = user;
+      document.getElementById('admin-gate').classList.add('hidden');
+      init();
+    }
+
+    function init() {
+      /* NAV */
+      const r = document.getElementById('nav-right');
+      r.innerHTML = `
+        <div class="nav-user-pill">
+          <div class="nav-avatar" style="background:linear-gradient(135deg,var(--red),var(--blue))">${adminUser.username[0].toUpperCase()}</div>
+          <span>${adminUser.username}</span>
+        </div>
+        <button class="nav-logout-btn" onclick="Auth.logout()">Logout</button>`;
+
+      updatePendingBadge();
+      renderOverview();
+    }
+
+    /* ── SECTION SWITCHING ── */
+    const SECTIONS = ['overview', 'problems', 'add', 'review', 'all-subs', 'users', 'settings'];
+    function showSection(name) {
+      SECTIONS.forEach(s => {
+        document.getElementById('sec-' + s).classList.toggle('active', s === name);
+        document.getElementById('sb-' + s)?.classList.toggle('active', s === name);
+      });
+      // Render on demand
+      if (name === 'overview') renderOverview();
+      if (name === 'problems') renderProblemsTable();
+      if (name === 'review') renderPending();
+      if (name === 'all-subs') renderAllSubs();
+      if (name === 'users') renderUsers();
+      if (name === 'add' && !document.getElementById('edit-problem-id').value) resetProbForm();
+    }
+
+    /* ── PENDING BADGE ── */
+    function updatePendingBadge() {
+      const count = Store.getPendingSubmissions().length;
+      const badge = document.getElementById('pending-badge');
+      badge.textContent = count;
+      badge.style.display = count ? 'inline-block' : 'none';
+    }
+
+    /* ── OVERVIEW ── */
+    function renderOverview() {
+      const problems = Store.getProblems();
+      const users = Store.getUsers().filter(u => u.role !== 'admin');
+      const subs = Store.getSubmissions();
+      const pending = subs.filter(s => s.verdict === 'pending');
+      const accepted = subs.filter(s => s.verdict === 'accepted');
+
+      document.getElementById('overview-stats').innerHTML = [
+        { label: 'Problems', val: problems.length, sub: 'in problem set' },
+        { label: 'Students', val: users.length, sub: 'registered' },
+        { label: 'Submissions', val: subs.length, sub: `${accepted.length} accepted` },
+        { label: 'Pending', val: pending.length, sub: 'need review' },
+      ].map(s => `
+        <div class="stat-card">
+          <div class="stat-label">${s.label}</div>
+          <div class="stat-value">${s.val}</div>
+          <div class="stat-sub">${s.sub}</div>
+        </div>`).join('');
+
+      const pendingList = document.getElementById('overview-pending');
+      if (!pending.length) {
+        pendingList.innerHTML = '<div class="empty-state" style="padding:24px"><p>No pending submissions ✓</p></div>';
+        return;
+      }
+      pendingList.innerHTML = pending.slice(0, 5).map(s => reviewCardHtml(s)).join('');
+    }
+
+    /* ── PROBLEMS TABLE ── */
+    function renderProblemsTable() {
+      const problems = Store.getProblems();
+      const wrap = document.getElementById('problems-table-wrap');
+      if (!problems.length) {
+        wrap.innerHTML = '<div class="empty-state"><p>No problems yet. Add one!</p></div>';
+        return;
+      }
+      wrap.innerHTML = `<table>
+        <thead><tr>
+          <th>#</th><th>Title</th><th>Difficulty</th><th>Tags</th><th>Pts</th><th>Submissions</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+          ${problems.map(p => {
+            const stats = Store.getProblemStats(p.id);
+            const diff = p.difficulty.toLowerCase();
+            return `<tr>
+              <td class="mono muted">${p.number}</td>
+              <td><strong>${escHtml(p.title)}</strong></td>
+              <td><span class="badge badge-${diff}">${p.difficulty}</span></td>
+              <td style="max-width:200px">${(p.tags||[]).map(t=>`<span class="tag">${escHtml(t)}</span>`).join(' ')}</td>
+              <td class="mono" style="color:var(--green)">${p.points}</td>
+              <td class="mono muted">${stats.total} (${stats.rate}% acc)</td>
+              <td>
+                <div style="display:flex;gap:6px">
+                  <button class="btn btn-ghost btn-sm" onclick="editProblem('${p.id}')">Edit</button>
+                  <button class="btn btn-danger btn-sm" onclick="confirmDelete('${p.id}')">Del</button>
+                </div>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+    }
+
+    /* ── PROBLEM FORM ── */
+    let exampleCount = 0;
+    function addExample(data = null) {
+      const id = ++exampleCount;
+      const list = document.getElementById('examples-list');
+      const div = document.createElement('div');
+      div.className = 'example-item';
+      div.id = 'ex-' + id;
+      div.innerHTML = `
+        <button type="button" class="remove-example" onclick="document.getElementById('ex-${id}').remove()">✕</button>
+        <div class="form-group">
+          <label class="form-label">Input</label>
+          <input class="form-input ex-input" type="text" placeholder="nums = [2,7,11,15], target = 9" value="${escHtml(data?.input || '')}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Output</label>
+          <input class="form-input ex-output" type="text" placeholder="[0,1]" value="${escHtml(data?.output || '')}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Explanation <span style="color:var(--text-3)">(optional)</span></label>
+          <input class="form-input ex-explanation" type="text" placeholder="Because nums[0] + nums[1] == 9" value="${escHtml(data?.explanation || '')}" />
+        </div>`;
+      list.appendChild(div);
+    }
+
+    function resetProbForm() {
+      document.getElementById('prob-form').reset();
+      document.getElementById('edit-problem-id').value = '';
+      document.getElementById('examples-list').innerHTML = '';
+      document.getElementById('testcases-list').innerHTML = '';
+      document.getElementById('add-pre').textContent = '// add_problem';
+      document.getElementById('add-title').textContent = 'Add New Problem';
+      document.getElementById('save-prob-btn').textContent = 'Save Problem';
+      exampleCount = 0; tcCount = 0;
+      addExample(); addTestCase();
+      showSection('add');
+    }
+
+    let tcCount = 0;
+    function addTestCase(data = null) {
+      const id = ++tcCount;
+      const list = document.getElementById('testcases-list');
+      const div = document.createElement('div');
+      div.className = 'example-item'; div.id = 'tc-' + id;
+      div.innerHTML = `
+        <button type="button" class="remove-example" onclick="document.getElementById('tc-${id}').remove()">✕</button>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <label style="display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:.78rem;color:var(--text-3);cursor:pointer">
+            <input type="checkbox" class="tc-hidden" ${data?.isHidden ? 'checked' : ''}> Hidden (not shown to student)
+          </label>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Input (stdin)</label>
+          <textarea class="form-textarea tc-in" style="min-height:70px;font-family:var(--font-mono);font-size:.82rem" placeholder="4\n2 7 11 15\n9">${escHtml(data?.input||'')}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Expected Output (stdout)</label>
+          <input class="form-input tc-out" type="text" placeholder="0 1" value="${escHtml(data?.expectedOutput||'')}" />
+        </div>`;
+      list.appendChild(div);
+    }
+
+    function editProblem(id) {
+      const p = Store.getProblemById(id);
+      if (!p) return;
+      document.getElementById('edit-problem-id').value = p.id;
+      document.getElementById('p-title').value = p.title;
+      document.getElementById('p-diff').value = p.difficulty;
+      document.getElementById('p-timelimit').value = p.timeLimit || '';
+      document.getElementById('p-memlimit').value = p.memoryLimit || '';
+      document.getElementById('p-tags').value = (p.tags || []).join(', ');
+      document.getElementById('p-desc').value = p.description || '';
+      document.getElementById('p-constraints').value = p.constraints || '';
+      document.getElementById('examples-list').innerHTML = '';
+      document.getElementById('testcases-list').innerHTML = '';
+      exampleCount = 0; tcCount = 0;
+      (p.examples || []).forEach(ex => addExample(ex));
+      if (!p.examples?.length) addExample();
+      (p.testCases || []).forEach(tc => addTestCase(tc));
+      if (!p.testCases?.length) addTestCase();
+
+      document.getElementById('add-pre').textContent = '// edit_problem';
+      document.getElementById('add-title').textContent = 'Edit: ' + p.title;
+      document.getElementById('save-prob-btn').textContent = 'Update Problem';
+      showSection('add');
+    }
+
+    function saveProblem(e) {
+      e.preventDefault();
+      const editId = document.getElementById('edit-problem-id').value;
+      const examples = Array.from(document.getElementById('examples-list').children).map(el => ({
+        input: el.querySelector('.ex-input').value.trim(),
+        output: el.querySelector('.ex-output').value.trim(),
+        explanation: el.querySelector('.ex-explanation').value.trim(),
+      })).filter(ex => ex.input && ex.output);
+
+      const testCases = Array.from(document.getElementById('testcases-list').children).map(el => ({
+        input: el.querySelector('.tc-in').value,
+        expectedOutput: el.querySelector('.tc-out').value.trim(),
+        isHidden: el.querySelector('.tc-hidden').checked,
+      })).filter(tc => tc.expectedOutput !== undefined);
+
+      const data = {
+        title: document.getElementById('p-title').value.trim(),
+        difficulty: document.getElementById('p-diff').value,
+        timeLimit: document.getElementById('p-timelimit').value.trim() || '1 second',
+        memoryLimit: document.getElementById('p-memlimit').value.trim() || '256 MB',
+        tags: document.getElementById('p-tags').value.split(',').map(t => t.trim()).filter(Boolean),
+        description: document.getElementById('p-desc').value.trim(),
+        constraints: document.getElementById('p-constraints').value.trim(),
+        examples, testCases,
+      };
+
+      if (editId) {
+        Store.updateProblem(editId, data);
+        showToast('Problem updated successfully!', 'success');
+      } else {
+        Store.createProblem(data);
+        showToast('Problem added successfully!', 'success');
+      }
+      resetProbForm();
+      showSection('problems');
+    }
+
+    /* ── DELETE ── */
+    let pendingDeleteId = null;
+    function confirmDelete(id) {
+      const p = Store.getProblemById(id);
+      pendingDeleteId = id;
+      document.getElementById('del-msg').textContent = `Delete "${p?.title}"? This cannot be undone.`;
+      document.getElementById('del-modal').classList.remove('hidden');
+      document.getElementById('del-confirm-btn').onclick = () => {
+        Store.deleteProblem(pendingDeleteId);
+        document.getElementById('del-modal').classList.add('hidden');
+        renderProblemsTable();
+        renderOverview();
+        showToast('Problem deleted.', 'warn');
+      };
+    }
+
+    /* ── PENDING REVIEW ── */
+    function reviewCardHtml(s) {
+      const LANG_LABELS = { cpp: 'C++', python: 'Python 3', java: 'Java', javascript: 'JavaScript' };
+      return `
+      <div class="review-card" id="rc-${s.id}">
+        <div class="review-header">
+          <div class="review-meta">
+            <div class="rm-user">${escHtml(s.username)}</div>
+            <div class="rm-problem">Problem: ${escHtml(s.problemTitle)}</div>
+            <div class="rm-time">${new Date(s.submittedAt).toLocaleString()} &mdash; ${LANG_LABELS[s.language] || s.language}</div>
+          </div>
+          <div class="review-actions-row">
+            <button class="btn btn-sm" style="background:var(--green);color:var(--bg-base);border:none" onclick="setVerdict('${s.id}', 'accepted')">✓ Accept</button>
+            <button class="btn btn-sm btn-danger" onclick="setVerdict('${s.id}', 'wrong_answer')">✗ Wrong</button>
+            <button class="btn btn-sm btn-ghost" onclick="setVerdict('${s.id}', 'time_limit')">TLE</button>
+            <button class="btn btn-sm btn-ghost" onclick="setVerdict('${s.id}', 'compile_error')">CE</button>
+            <button class="btn btn-sm btn-ghost" onclick="viewCode('${s.id}')">View Code</button>
+          </div>
+        </div>
+        <div class="review-code-wrap">${escHtml(s.code.length > 500 ? s.code.slice(0, 500) + '\n...(truncated)' : s.code)}</div>
+      </div>`;
+    }
+
+    function renderPending() {
+      const pending = Store.getPendingSubmissions().sort((a,b) => new Date(a.submittedAt) - new Date(b.submittedAt));
+      const list = document.getElementById('pending-list');
+      if (!pending.length) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">✓</div><p>All submissions reviewed!</p></div>';
+        return;
+      }
+      list.innerHTML = pending.map(s => reviewCardHtml(s)).join('');
+    }
+
+    function setVerdict(subId, verdict) {
+      Store.setVerdict(subId, verdict);
+      updatePendingBadge();
+
+      const verdictLabels = { accepted: 'Accepted', wrong_answer: 'Wrong Answer', time_limit: 'Time Limit Exceeded', compile_error: 'Compile Error' };
+      showToast(`Marked as: ${verdictLabels[verdict] || verdict}`, verdict === 'accepted' ? 'success' : 'warn');
+
+      // Remove card from UI
+      const card = document.getElementById('rc-' + subId);
+      if (card) {
+        card.style.opacity = '0.5';
+        card.style.pointerEvents = 'none';
+        setTimeout(() => { card.remove(); renderOverview(); }, 500);
+      }
+    }
+
+    /* ── ALL SUBMISSIONS ── */
+    function renderAllSubs() {
+      const subs = Store.getSubmissions().sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+      const wrap = document.getElementById('all-subs-table');
+      if (!subs.length) {
+        wrap.innerHTML = '<div class="empty-state"><p>No submissions yet.</p></div>';
+        return;
+      }
+      const VERDICT_MAP = {
+        pending: '<span class="badge badge-pending">Pending</span>',
+        accepted: '<span class="badge badge-accepted">Accepted</span>',
+        wrong_answer: '<span class="badge badge-wrong">Wrong Answer</span>',
+        time_limit: '<span class="badge badge-tle">TLE</span>',
+        compile_error: '<span class="badge badge-ce">CE</span>',
+      };
+      const LANG_LABELS = { cpp: 'C++', python: 'Python 3', java: 'Java', javascript: 'JavaScript' };
+      wrap.innerHTML = `<table>
+        <thead><tr><th>Time</th><th>User</th><th>Problem</th><th>Lang</th><th>Verdict</th><th>Pts</th><th></th></tr></thead>
+        <tbody>
+          ${subs.map(s => `<tr>
+            <td class="mono" style="color:var(--text-3);font-size:0.78rem;white-space:nowrap">${new Date(s.submittedAt).toLocaleString()}</td>
+            <td class="mono">${escHtml(s.username)}</td>
+            <td>${escHtml(s.problemTitle)}</td>
+            <td class="mono" style="color:var(--blue)">${LANG_LABELS[s.language] || s.language}</td>
+            <td>${VERDICT_MAP[s.verdict] || s.verdict}</td>
+            <td class="mono" style="color:var(--green)">${s.score || 0}</td>
+            <td>
+              ${s.verdict === 'pending' ? `<div style="display:flex;gap:4px">
+                <button class="btn btn-sm" style="background:var(--green);color:var(--bg-base);border:none;padding:4px 8px" onclick="quickVerdict('${s.id}','accepted')">✓</button>
+                <button class="btn btn-danger btn-sm" style="padding:4px 8px" onclick="quickVerdict('${s.id}','wrong_answer')">✗</button>
+              </div>` : ''}
+              <button class="sub-view-btn" onclick="viewCode('${s.id}')">View</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+    }
+
+    function quickVerdict(id, verdict) {
+      Store.setVerdict(id, verdict);
+      updatePendingBadge();
+      renderAllSubs();
+      showToast('Verdict set.', verdict === 'accepted' ? 'success' : 'warn');
+    }
+
+    /* ── USERS ── */
+    function renderUsers() {
+      const users = Store.getUsers();
+      const wrap = document.getElementById('users-table');
+      wrap.innerHTML = `<table>
+        <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Solved</th><th>Score</th><th>Joined</th></tr></thead>
+        <tbody>
+          ${users.map(u => {
+            const solved = Store.getSolvedByUser(u.id).size;
+            const lb = Store.getLeaderboard().find(e => e.userId === u.id);
+            return `<tr>
+              <td class="mono"><strong>${escHtml(u.username)}</strong></td>
+              <td style="color:var(--text-2);font-size:0.85rem">${escHtml(u.email)}</td>
+              <td><span class="user-role-badge role-${u.role}">${u.role}</span></td>
+              <td class="mono" style="color:var(--text-2)">${solved}</td>
+              <td class="mono" style="color:var(--green)">${lb?.score || 0}</td>
+              <td style="color:var(--text-3);font-size:0.78rem">${new Date(u.createdAt).toLocaleDateString()}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+    }
+
+    /* ── CODE MODAL ── */
+    function viewCode(subId) {
+      const sub = Store.getSubmissions().find(s => s.id === subId);
+      if (!sub) return;
+      const LANG_LABELS = { cpp: 'C++', python: 'Python 3', java: 'Java', javascript: 'JavaScript' };
+      document.getElementById('code-modal-title').textContent = `// ${LANG_LABELS[sub.language] || sub.language} — ${escHtml(sub.username)} — ${sub.problemTitle}`;
+      document.getElementById('code-modal-content').textContent = sub.code;
+      document.getElementById('code-modal').classList.remove('hidden');
+    }
+    function closeCodeModal() { document.getElementById('code-modal').classList.add('hidden'); }
+
+    /* ── SETTINGS ── */
+    function changeAdminPass() {
+      const np = document.getElementById('new-pass').value.trim();
+      if (!np || np.length < 6) { showToast('Password must be at least 6 characters.', 'error'); return; }
+      Store._set(Store.K.ADMIN_PASS, np);
+      // Update admin user's password
+      const users = Store.getUsers();
+      const i = users.findIndex(u => u.role === 'admin');
+      if (i >= 0) { users[i].password = np; Store._saveUsers(users); }
+      document.getElementById('new-pass').value = '';
+      showToast('Admin password updated.', 'success');
+    }
+
+    function clearSubmissions() {
+      if (!confirm('Are you sure? This will delete ALL submissions permanently.')) return;
+      Store._set(Store.K.SUBMISSIONS, []);
+      updatePendingBadge();
+      renderOverview();
+      showToast('All submissions cleared.', 'warn');
+    }
+
+    /* ── UTILS ── */
+    function escHtml(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* profile link on nav avatar */
+    function initNavProfile(u) {
+      const r = document.getElementById('nav-right');
+      if (!r) return;
+      const existing = r.querySelector('.nav-user-pill');
+      if (existing && !existing.getAttribute('href')) {
+        const link = document.createElement('a');
+        link.href = 'profile.html'; link.style.textDecoration = 'none';
+        existing.parentNode.replaceChild(link, existing); link.appendChild(existing);
+      }
+    }
+    function showToast(msg, type = 'info') {
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      const icons = { success: '✓', error: '✗', info: 'ℹ', warn: '⚠' };
+      t.innerHTML = `<span>${icons[type] || 'ℹ'}</span><span>${msg}</span>`;
+      document.getElementById('toast-container').appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Problem — CP Arena</title>
+  <link rel="stylesheet" href="css/theme.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <style>
+    .problem-layout{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 64px)}
+    @media(max-width:900px){.problem-layout{grid-template-columns:1fr;height:auto}}
+    /* Left panel */
+    .problem-panel{border-right:1px solid var(--border);overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
+    .prob-num{font-family:var(--font-mono);font-size:.78rem;color:var(--text-3)}
+    .prob-title-h{font-size:1.35rem;font-weight:800;color:var(--text-1);margin:6px 0 8px}
+    .prob-info{display:flex;gap:14px;font-family:var(--font-mono);font-size:.76rem;color:var(--text-3);flex-wrap:wrap}
+    .solved-banner{background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.25);border-radius:var(--radius);padding:9px 14px;display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:.83rem;color:var(--green)}
+    .prob-desc{color:var(--text-2);line-height:1.8;font-size:.91rem}
+    .prob-desc h2{font-family:var(--font-mono);font-size:.8rem;color:var(--green);letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px}
+    .prob-desc p{margin-bottom:10px}.prob-desc code{background:var(--bg-elevated);border:1px solid var(--border-muted);border-radius:4px;color:var(--text-code);padding:2px 5px;font-size:.86em}
+    .prob-desc strong{color:var(--text-1)}.prob-desc ul,.prob-desc ol{padding-left:18px;margin-bottom:10px}
+    .ex-block{background:var(--bg-elevated);border:1px solid var(--border-muted);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+    .ex-head{font-family:var(--font-mono);font-size:.72rem;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+    .ex-row{display:grid;grid-template-columns:60px 1fr;gap:6px;margin-bottom:5px;font-family:var(--font-mono);font-size:.83rem}
+    .ex-label{color:var(--text-3)}.ex-val{color:var(--text-code);word-break:break-all}
+    .ex-note{font-size:.8rem;color:var(--text-2);font-style:italic;margin-top:6px}
+    .constraints-box{background:var(--bg-elevated);border:1px solid var(--border-muted);border-left:3px solid var(--blue);border-radius:var(--radius);padding:14px;font-family:var(--font-mono);font-size:.8rem;color:var(--text-2);line-height:1.8}
+    .c-head{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--blue);margin-bottom:6px}
+    /* Right editor panel */
+    .editor-panel{display:flex;flex-direction:column;overflow:hidden;height:calc(100vh - 64px)}
+    @media(max-width:900px){.editor-panel{height:auto;min-height:600px}}
+    .editor-topbar{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border);background:var(--bg-elevated);gap:9px;flex-shrink:0}
+    .lang-sel{background:var(--bg-input);border:1px solid var(--border-muted);color:var(--green);font-family:var(--font-mono);font-size:.8rem;padding:5px 9px;border-radius:7px;cursor:pointer;outline:none}
+    .lang-sel option{background:var(--bg-elevated)}
+    .editor-wrap{flex:1;overflow:hidden;min-height:180px;transition:flex .3s ease}
+    .CodeMirror{font-family:'JetBrains Mono',monospace!important;font-size:13.5px!important;height:100%!important;background:#060b1a!important}
+    .cm-s-dracula .cm-keyword{color:#00ff88!important}.cm-s-dracula .cm-def{color:#00b4ff!important}
+    /* Results panel */
+    .results-panel{flex-shrink:0;border-top:1px solid var(--border);background:var(--bg-elevated);overflow:hidden;transition:max-height .35s ease}
+    .results-panel.collapsed{max-height:0}
+    .results-panel.expanded{max-height:360px;overflow-y:auto}
+    .results-head{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border-muted);cursor:pointer;user-select:none;position:sticky;top:0;background:var(--bg-elevated);z-index:2}
+    .results-head-left{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:.78rem;color:var(--text-2)}
+    .progress-bar-wrap{flex:1;height:3px;background:var(--bg-base);border-radius:2px;overflow:hidden;min-width:60px;max-width:180px}
+    .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--blue));border-radius:2px;transition:width .4s ease}
+    .verdict-main{padding:11px 14px;display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:.85rem;font-weight:700;border-bottom:1px solid var(--border-muted)}
+    .verdict-main.ac{color:var(--green);background:rgba(0,255,136,.05)}
+    .verdict-main.wa{color:var(--hard);background:rgba(255,71,87,.05)}
+    .verdict-main.ce{color:var(--ce);background:rgba(236,204,104,.05)}
+    .verdict-main.re{color:var(--tle);background:rgba(255,107,107,.05)}
+    .pts-pop{font-size:.75rem;padding:3px 10px;background:var(--green-dim);color:var(--green);border:1px solid rgba(0,255,136,.3);border-radius:50px;animation:fadeInUp .4s ease}
+    .tc-item{padding:9px 14px;border-bottom:1px solid rgba(148,163,184,.06);font-family:var(--font-mono);font-size:.78rem}
+    .tc-head{display:flex;align-items:center;gap:8px;margin-bottom:0;cursor:pointer}
+    .tc-head.pass{color:var(--green)}.tc-head.fail{color:var(--hard)}.tc-head.ce{color:var(--ce)}.tc-head.running{color:var(--text-3)}
+    .tc-detail{display:none;margin-top:8px;display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--text-3)}
+    .tc-detail.open{display:flex}.tc-row{display:grid;grid-template-columns:72px 1fr;gap:6px}
+    .tc-got-wrong{color:var(--hard)}.tc-got-ok{color:var(--green)}
+    /* Subs panel */
+    .subs-panel{flex-shrink:0;border-top:1px solid var(--border);max-height:175px;overflow-y:auto}
+    .subs-head{padding:7px 14px;font-family:var(--font-mono);font-size:.7rem;color:var(--text-3);letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--border-muted);background:var(--bg-elevated);display:flex;align-items:center;gap:8px;position:sticky;top:0}
+    .sub-row{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid rgba(148,163,184,.06);font-family:var(--font-mono);font-size:.76rem}
+    .sub-time{color:var(--text-3);white-space:nowrap;min-width:70px}.sub-lang{color:var(--blue);min-width:70px}
+    .sub-vbtn{background:none;border:1px solid var(--border-muted);border-radius:5px;color:var(--text-3);font-family:var(--font-mono);font-size:.7rem;padding:2px 7px;cursor:pointer;transition:all var(--transition-fast)}
+    .sub-vbtn:hover{border-color:var(--blue);color:var(--blue)}
+    .code-pre{background:#060b1a;border-radius:8px;padding:14px;overflow:auto;font-family:var(--font-mono);font-size:.8rem;color:var(--text-code);max-height:55vh}
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="problems.html" class="nav-logo" style="font-size:.9rem"><span class="bracket">←</span>&nbsp;<span class="logo-text">Problem Set</span></a>
+    <div class="nav-links"><a href="leaderboard.html" class="nav-link">Leaderboard</a></div>
+    <div class="nav-right" id="nav-right"></div>
+  </div>
+</nav>
+
+<div id="root" style="display:flex;align-items:center;justify-content:center;height:calc(100vh - 64px);color:var(--text-3);font-family:var(--font-mono)">Loading...</div>
+
+<!-- Code modal -->
+<div class="modal-overlay hidden" id="code-modal">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-header"><span class="modal-title" id="cm-title">// Code</span><button class="modal-close" onclick="document.getElementById('code-modal').classList.add('hidden')">✕</button></div>
+    <div class="modal-body"><pre class="code-pre" id="cm-body"></pre></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="js/store.js"></script>
+<script src="js/auth.js"></script>
+<script>
+const user = Auth.requireLogin();
+const problemId = new URLSearchParams(location.search).get('id');
+let problem = null, editor = null;
+
+/* ── NAV ── */
+(function(){
+  const r = document.getElementById('nav-right');
+  r.innerHTML = `<a href="profile.html" class="nav-user-pill" style="text-decoration:none;cursor:pointer">
+    <div class="nav-avatar">${user.username[0].toUpperCase()}</div><span>${user.username}</span></a>
+    <button class="nav-logout-btn" onclick="Auth.logout()">Logout</button>`;
+})();
+
+/* ── LANG CONFIG ── */
+const LANGS = {
+  cpp:        { mode:'text/x-c++src', label:'C++',        file:'main.cpp',  starter:'#include <bits/stdc++.h>\nusing namespace std;\nint main(){\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    // read input, write output\n    return 0;\n}'},
+  python:     { mode:'text/x-python',  label:'Python 3',   file:'main.py',   starter:'import sys\ninput = sys.stdin.readline\n\ndef solve():\n    # read input, write output\n    pass\n\nsolve()'},
+  java:       { mode:'text/x-java',    label:'Java',       file:'Main.java', starter:'import java.util.*;\nimport java.io.*;\npublic class Main{\n    public static void main(String[] args) throws IOException{\n        BufferedReader br=new BufferedReader(new InputStreamReader(System.in));\n        // Your solution here\n    }\n}'},
+  javascript: { mode:'javascript',     label:'JavaScript', file:'main.js',   starter:'const lines=require("fs").readFileSync("/dev/stdin","utf8").trim().split("\\n");\nlet idx=0;\nconst nl=()=>lines[idx++];\n// solve here\n'},
+};
+
+/* ── INIT ── */
+(function(){
+  if(!problemId){ location.href='problems.html'; return; }
+  problem = Store.getProblemById(problemId);
+  if(!problem){ location.href='problems.html'; return; }
+  document.title = problem.title + ' — CP Arena';
+  renderLayout();
+})();
+
+/* ── RENDER ── */
+function renderLayout(){
+  const isSolved = Store.getSolvedByUser(user.id).has(problem.id);
+  const diff = problem.difficulty.toLowerCase();
+  const exHtml = (problem.examples||[]).map((ex,i)=>`
+    <div class="ex-block"><div class="ex-head">Example ${i+1}</div>
+    <div class="ex-row"><span class="ex-label">Input:</span><span class="ex-val">${esc(ex.input)}</span></div>
+    <div class="ex-row"><span class="ex-label">Output:</span><span class="ex-val">${esc(ex.output)}</span></div>
+    ${ex.explanation?`<div class="ex-note">${esc(ex.explanation)}</div>`:''}</div>`).join('');
+
+  document.getElementById('root').outerHTML = `
+  <div class="problem-layout">
+    <!-- LEFT -->
+    <div class="problem-panel">
+      <div>
+        <div class="prob-num">#${problem.number}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px">
+          <span class="badge badge-${diff}">${problem.difficulty}</span>
+          <span class="badge" style="color:var(--purple);background:var(--purple-dim);border:1px solid rgba(180,79,255,.25)">${problem.points} pts</span>
+          ${isSolved?'<span class="badge badge-accepted">✓ Solved</span>':''}
+        </div>
+        <h1 class="prob-title-h">${esc(problem.title)}</h1>
+        <div class="prob-info"><span>⏱ ${problem.timeLimit||'1s'}</span><span>💾 ${problem.memoryLimit||'256 MB'}</span><span>📋 ${(problem.testCases||[]).length} test cases</span></div>
+      </div>
+      ${isSolved?'<div class="solved-banner">✓ You have solved this problem!</div>':''}
+      <div class="prob-desc" id="prob-desc"></div>
+      ${exHtml?`<div><div style="font-family:var(--font-mono);font-size:.72rem;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">// Examples</div>${exHtml}</div>`:''}
+      ${problem.constraints?`<div class="constraints-box"><div class="c-head">// Constraints</div><div id="ctext"></div></div>`:''}
+      ${(problem.tags||[]).length?`<div><div style="font-family:var(--font-mono);font-size:.7rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Tags</div><div style="display:flex;gap:6px;flex-wrap:wrap">${problem.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div></div>`:''}
+    </div>
+    <!-- RIGHT -->
+    <div class="editor-panel">
+      <div class="editor-topbar">
+        <select class="lang-sel" id="lang-sel" onchange="changeLang()">
+          <option value="cpp">C++</option><option value="python">Python 3</option>
+          <option value="java">Java</option><option value="javascript">JavaScript</option>
+        </select>
+        <div style="display:flex;gap:7px;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="resetCode()">⟳ Reset</button>
+          <button class="btn btn-primary btn-sm" id="submit-btn" onclick="doSubmit()">⚡ Submit</button>
+        </div>
+      </div>
+      <div class="editor-wrap"><textarea id="cm-editor"></textarea></div>
+      <!-- Results -->
+      <div class="results-panel collapsed" id="results-panel">
+        <div class="results-head" onclick="toggleResults()">
+          <div class="results-head-left">
+            <span id="rh-text">// Results</span>
+            <div class="progress-bar-wrap"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
+          </div>
+          <span id="rh-chevron" style="color:var(--text-3);font-size:.8rem">▼</span>
+        </div>
+        <div id="verdict-main-area"></div>
+        <div id="tc-list"></div>
+      </div>
+      <!-- Submissions -->
+      <div class="subs-panel">
+        <div class="subs-head">// Submissions <span id="sub-count" style="color:var(--green)">0</span></div>
+        <div id="sub-list"></div>
+      </div>
+    </div>
+  </div>`;
+
+  // Render markdown
+  if(typeof marked!=='undefined') document.getElementById('prob-desc').innerHTML=marked.parse(problem.description||'');
+  else document.getElementById('prob-desc').innerText=problem.description||'';
+  const ct=document.getElementById('ctext');
+  if(ct) ct.innerHTML=(problem.constraints||'').replace(/\n/g,'<br>');
+
+  // CodeMirror
+  editor = CodeMirror.fromTextArea(document.getElementById('cm-editor'),{
+    mode:'text/x-c++src', theme:'dracula', lineNumbers:true, tabSize:4, indentWithTabs:false,
+    autoCloseBrackets:true, matchBrackets:true, extraKeys:{'Ctrl-Enter':doSubmit},
+  });
+  editor.setValue(LANGS.cpp.starter);
+  editor.setSize(null,'100%');
+  renderSubs();
+}
+
+function changeLang(){
+  const l=document.getElementById('lang-sel').value;
+  editor.setOption('mode',LANGS[l].mode);
+  const cur=editor.getValue();
+  if(Object.values(LANGS).map(x=>x.starter).includes(cur)) editor.setValue(LANGS[l].starter);
+}
+function resetCode(){ const l=document.getElementById('lang-sel').value; editor.setValue(LANGS[l].starter); toast('Reset to starter template.','info'); }
+function toggleResults(){
+  const panel=document.getElementById('results-panel');
+  const isCol=panel.classList.contains('collapsed');
+  panel.classList.toggle('collapsed',!isCol);
+  panel.classList.toggle('expanded',isCol);
+  document.getElementById('rh-chevron').textContent=isCol?'▲':'▼';
+}
+
+/* ── AUTO-JUDGE ── */
+const PISTON = 'https://emkc.org/api/v2/piston/execute';
+
+async function pistonRun(lang, code, stdin){
+  const langMap={cpp:{language:'c++',version:'*'},python:{language:'python',version:'*'},java:{language:'java',version:'*'},javascript:{language:'javascript',version:'*'}};
+  const cfg=langMap[lang]||langMap.cpp;
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(),30000);
+  try{
+    const res=await fetch(PISTON,{method:'POST',signal:ctrl.signal,headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({language:cfg.language,version:cfg.version,files:[{name:LANGS[lang].file,content:code}],stdin})});
+    clearTimeout(timer);
+    const d=await res.json();
+    return{stdout:(d.run?.stdout||'').trimEnd(),stderr:(d.run?.stderr||'').trim(),exitCode:d.run?.code??-1,compileErr:(d.compile?.stderr||'').trim()};
+  }catch(e){ clearTimeout(timer); throw e; }
+}
+
+function cmpOut(a,e){ return a.trimEnd()===e.trimEnd(); }
+
+async function doSubmit(){
+  const code=editor.getValue().trim();
+  if(!code){ toast('Write some code first!','warn'); return; }
+  const lang=document.getElementById('lang-sel').value;
+  const tcs=problem.testCases||[];
+
+  const btn=document.getElementById('submit-btn');
+  btn.disabled=true; btn.innerHTML='<span class="btn-spinner"></span>';
+
+  // Open results panel
+  const rp=document.getElementById('results-panel');
+  rp.classList.remove('collapsed'); rp.classList.add('expanded');
+  document.getElementById('rh-chevron').textContent='▲';
+  document.getElementById('verdict-main-area').innerHTML='';
+
+  if(!tcs.length){
+    // No test cases → save as pending (manual review)
+    Store.createSubmission({userId:user.id,username:user.username,problemId:problem.id,problemTitle:problem.title,code,language:lang});
+    toast('No test cases yet — submission sent for manual review.','warn');
+    btn.innerHTML='⚡ Submit'; btn.disabled=false;
+    renderSubs(); return;
+  }
+
+  // Init tc list
+  const tcListEl=document.getElementById('tc-list');
+  tcListEl.innerHTML=tcs.map((_,i)=>`
+    <div class="tc-item" id="tc-item-${i}">
+      <div class="tc-head running" id="tc-head-${i}">
+        <span>◌</span><span>${tcs[i].isHidden?`Hidden Test ${i+1}`:`Test ${i+1}`}</span>
+        <span style="margin-left:auto;color:var(--text-3)">waiting</span>
+      </div>
+    </div>`).join('');
+
+  let passed=0, firstFail=null, compileErrorAll=false;
+  const results=[];
+
+  for(let i=0;i<tcs.length;i++){
+    const tc=tcs[i];
+    const headEl=document.getElementById(`tc-head-${i}`);
+    const itemEl=document.getElementById(`tc-item-${i}`);
+    document.getElementById('rh-text').textContent=`// Judging ${i+1}/${tcs.length}`;
+    document.getElementById('prog-fill').style.width=`${Math.round(i/tcs.length*100)}%`;
+
+    // Update tc UI to running
+    headEl.className='tc-head running';
+    headEl.innerHTML=`<span style="animation:spin .7s linear infinite;display:inline-block">↻</span><span>${tc.isHidden?`Hidden Test ${i+1}`:`Test ${i+1}`}</span><span style="margin-left:auto;color:var(--text-3)">running...</span>`;
+
+    let r={passed:false,stdout:'',stderr:'',exitCode:0,compileErr:'',time:0,isHidden:tc.isHidden,input:tc.input,expected:tc.expectedOutput};
+    const t0=Date.now();
+    try{
+      const out=await pistonRun(lang,code,tc.input);
+      r.time=Date.now()-t0; r.stdout=out.stdout; r.stderr=out.stderr; r.exitCode=out.exitCode; r.compileErr=out.compileErr;
+      if(r.compileErr){ r.verdict='ce'; compileErrorAll=true; }
+      else if(r.exitCode!==0){ r.verdict='re'; }
+      else if(cmpOut(r.stdout,tc.expectedOutput)){ r.verdict='ac'; r.passed=true; passed++; }
+      else{ r.verdict='wa'; if(!firstFail) firstFail=i; }
+    }catch(e){
+      r.time=Date.now()-t0; r.verdict='err'; r.stderr=e.message||'Network error';
+      if(!firstFail) firstFail=i;
+    }
+    results.push(r);
+
+    // Update tc item
+    const icon={ac:'✓',wa:'✗',ce:'⚠',re:'⚡',err:'⚠'}[r.verdict]||'?';
+    const cls={ac:'pass',wa:'fail',ce:'ce',re:'fail',err:'fail'}[r.verdict]||'fail';
+    let detailHtml='';
+    if(r.verdict==='ce'){
+      detailHtml=`<div class="tc-detail open"><div class="tc-row"><span>Compile:</span><span style="color:var(--ce)">${esc(r.compileErr.slice(0,300))}</span></div></div>`;
+    } else if(r.verdict==='re'){
+      detailHtml=`<div class="tc-detail open"><div class="tc-row"><span>Error:</span><span class="tc-got-wrong">${esc((r.stderr||'Runtime Error').slice(0,200))}</span></div></div>`;
+    } else if(r.verdict==='wa'){
+      const showIn=!tc.isHidden;
+      detailHtml=`<div class="tc-detail open">
+        ${showIn?`<div class="tc-row"><span>Input:</span><span>${esc(tc.input.slice(0,100))}</span></div>`:''}
+        <div class="tc-row"><span>Expected:</span><span class="tc-got-ok">${esc(tc.expectedOutput.slice(0,100))}</span></div>
+        <div class="tc-row"><span>Got:</span><span class="tc-got-wrong">${esc(r.stdout.slice(0,100)||'(empty)')}</span></div>
+      </div>`;
+    }
+    itemEl.innerHTML=`<div class="tc-head ${cls}" id="tc-head-${i}" style="cursor:default">
+      <span>${icon}</span><span>${tc.isHidden?`Hidden Test ${i+1}`:`Test ${i+1}`}</span>
+      ${r.verdict==='ac'?'':''}
+      <span style="margin-left:auto;color:var(--text-3);font-size:.72rem">${r.time}ms</span>
+    </div>${detailHtml}`;
+
+    // Stop running remaining if compile error
+    if(compileErrorAll){
+      for(let j=i+1;j<tcs.length;j++){
+        const el=document.getElementById(`tc-item-${j}`);
+        if(el) el.innerHTML=`<div class="tc-head ce"><span>⚠</span><span>${tcs[j].isHidden?`Hidden Test ${j+1}`:`Test ${j+1}`}</span><span style="margin-left:auto;color:var(--text-3);font-size:.72rem">skipped</span></div>`;
+      }
+      break;
+    }
+  }
+
+  // Final progress
+  document.getElementById('prog-fill').style.width='100%';
+  document.getElementById('rh-text').textContent=`// Results`;
+
+  // Determine overall verdict
+  let verdict, verdictLabel, verdictClass;
+  if(compileErrorAll){ verdict='compile_error'; verdictLabel='Compile Error'; verdictClass='ce'; }
+  else if(passed===tcs.length){ verdict='accepted'; verdictLabel=`Accepted — ${passed}/${tcs.length} passed`; verdictClass='ac'; }
+  else if(results.some(r=>r.verdict==='re')){ verdict='runtime_error'; verdictLabel=`Runtime Error — ${passed}/${tcs.length} passed`; verdictClass='re'; }
+  else { verdict='wrong_answer'; verdictLabel=`Wrong Answer — ${passed}/${tcs.length} passed`; verdictClass='wa'; }
+
+  // Check if first AC
+  const wasAlreadySolved=Store.getSolvedByUser(user.id).has(problem.id);
+  // Save submission
+  const subScore = verdict==='accepted' ? problem.points : 0;
+  Store.createSubmission({userId:user.id,username:user.username,problemId:problem.id,problemTitle:problem.title,code,language:lang,verdict,score:subScore,tcResults:{passed,total:tcs.length}});
+
+  // Show overall verdict
+  const isNewSolve=verdict==='accepted'&&!wasAlreadySolved;
+  document.getElementById('verdict-main-area').innerHTML=`
+    <div class="verdict-main ${verdictClass}">
+      <span>${verdict==='accepted'?'✓':verdict==='compile_error'?'⚠':'✗'}</span>
+      <span>${verdictLabel}</span>
+      ${isNewSolve?`<span class="pts-pop">+${problem.points} pts!</span>`:''}
+    </div>`;
+
+  if(verdict==='accepted') toast(isNewSolve?`Accepted! +${problem.points} pts`:'Accepted!','success');
+  else toast(verdictLabel,'error');
+
+  btn.innerHTML='⚡ Submit'; btn.disabled=false;
+  renderSubs();
+}
+
+/* ── SUBS ── */
+function renderSubs(){
+  const subs=Store.getSubmissionsByUser(user.id).filter(s=>s.problemId===problem.id)
+    .sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
+  document.getElementById('sub-count').textContent=subs.length;
+  const el=document.getElementById('sub-list');
+  if(!subs.length){ el.innerHTML='<div style="padding:9px 14px;font-family:var(--font-mono);font-size:.76rem;color:var(--text-3)">No submissions yet.</div>'; return; }
+  const VB={pending:'<span class="badge badge-pending">Pending</span>',accepted:'<span class="badge badge-accepted">✓ AC</span>',wrong_answer:'<span class="badge badge-wrong">WA</span>',compile_error:'<span class="badge badge-ce">CE</span>',runtime_error:'<span class="badge badge-tle">RE</span>'};
+  el.innerHTML=subs.map(s=>`<div class="sub-row">
+    <span class="sub-time">${ago(s.submittedAt)}</span>
+    <span class="sub-lang">${LANGS[s.language]?.label||s.language}</span>
+    <span style="flex:1">${VB[s.verdict]||(s.verdict)}</span>
+    ${s.tcResults?`<span style="color:var(--text-3);font-size:.72rem">${s.tcResults.passed}/${s.tcResults.total}</span>`:''}
+    <button class="sub-vbtn" onclick="viewCode('${s.id}')">View</button>
+  </div>`).join('');
+}
+
+function viewCode(id){
+  const s=Store.getSubmissions().find(x=>x.id===id); if(!s) return;
+  document.getElementById('cm-title').textContent=`// ${LANGS[s.language]?.label} — ${ago(s.submittedAt)}`;
+  document.getElementById('cm-body').textContent=s.code;
+  document.getElementById('code-modal').classList.remove('hidden');
+}
+
+/* ── UTILS ── */
+function ago(iso){ const m=Math.floor((Date.now()-new Date(iso))/60000); return m<1?'just now':m<60?m+'m ago':Math.floor(m/60)+'h ago'; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg,type='info'){ const t=document.createElement('div'); t.className=`toast ${type}`; const ic={success:'✓',error:'✗',info:'ℹ',warn:'⚠'}; t.innerHTML=`<span>${ic[type]||'ℹ'}</span><span>${msg}</span>`; document.getElementById('toast-container').appendChild(t); setTimeout(()=>t.remove(),3500); }
+</script>
+</body>
+</html>

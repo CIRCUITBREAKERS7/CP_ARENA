@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leaderboard — CP Arena</title>
+  <meta name="description" content="See who's topping the competitive programming leaderboard." />
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <style>
+    .lb-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    @media (max-width: 640px) { .lb-grid { grid-template-columns: 1fr; } }
+
+    /* Podium cards */
+    .podium-card {
+      border-radius: var(--radius-lg);
+      padding: 24px 20px;
+      text-align: center;
+      backdrop-filter: blur(16px);
+      transition: transform var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .podium-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .podium-card:hover { transform: translateY(-4px); }
+
+    .podium-1 { background: rgba(255,215,0,0.06); border: 1px solid rgba(255,215,0,0.3); }
+    .podium-1::before { background: linear-gradient(90deg, transparent, #ffd700, transparent); }
+    .podium-2 { background: rgba(192,192,192,0.06); border: 1px solid rgba(192,192,192,0.3); }
+    .podium-2::before { background: linear-gradient(90deg, transparent, #c0c0c0, transparent); }
+    .podium-3 { background: rgba(205,127,50,0.06); border: 1px solid rgba(205,127,50,0.3); }
+    .podium-3::before { background: linear-gradient(90deg, transparent, #cd7f32, transparent); }
+
+    .podium-medal { font-size: 2.5rem; margin-bottom: 10px; line-height: 1; }
+    .podium-avatar {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      margin: 0 auto 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono); font-weight: 800; font-size: 1.4rem;
+      color: var(--bg-base);
+    }
+    .podium-1 .podium-avatar { background: linear-gradient(135deg, #ffd700, #ffb300); box-shadow: 0 0 24px rgba(255,215,0,0.4); }
+    .podium-2 .podium-avatar { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); box-shadow: 0 0 24px rgba(192,192,192,0.3); }
+    .podium-3 .podium-avatar { background: linear-gradient(135deg, #cd7f32, #b8690c); box-shadow: 0 0 24px rgba(205,127,50,0.3); }
+
+    .podium-name { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; color: var(--text-1); margin-bottom: 4px; }
+    .podium-score { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 800; color: var(--green); line-height: 1; }
+    .podium-solved { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-3); margin-top: 4px; }
+
+    /* Full Table */
+    .lb-table-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(12px);
+      overflow: hidden;
+    }
+    .lb-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+    }
+    .lb-table thead th {
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-3);
+      white-space: nowrap;
+    }
+    .lb-table tbody tr {
+      border-bottom: 1px solid var(--border-muted);
+      transition: background var(--transition-fast);
+    }
+    .lb-table tbody tr:last-child { border-bottom: none; }
+    .lb-table tbody tr:hover { background: var(--bg-elevated); }
+    .lb-table tbody tr.is-me { background: var(--green-dimmer) !important; }
+    .lb-table tbody tr.is-me:hover { background: rgba(0,255,136,0.1) !important; }
+
+    .lb-table td { padding: 14px 20px; vertical-align: middle; }
+
+    .rank-cell { font-size: 0.85rem; font-weight: 800; width: 48px; }
+    .rank-1 { color: #ffd700; }
+    .rank-2 { color: #c0c0c0; }
+    .rank-3 { color: #cd7f32; }
+
+    .user-cell { display: flex; align-items: center; gap: 12px; }
+    .user-cell .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.9rem; color: var(--bg-base);
+      flex-shrink: 0;
+    }
+    .user-cell .uname { font-weight: 700; color: var(--text-1); font-size: 0.9rem; }
+    .user-cell .me-badge {
+      background: var(--green-dim);
+      color: var(--green);
+      border: 1px solid rgba(0,255,136,0.3);
+      border-radius: 50px;
+      font-size: 0.65rem;
+      padding: 2px 8px;
+    }
+
+    .score-cell { font-size: 1rem; font-weight: 800; color: var(--green); }
+    .solved-cell { color: var(--text-2); font-size: 0.88rem; }
+    .time-cell { color: var(--text-3); font-size: 0.78rem; white-space: nowrap; }
+
+    /* Score bar */
+    .score-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .score-bar {
+      flex: 1;
+      height: 4px;
+      background: var(--bg-elevated);
+      border-radius: 2px;
+      overflow: hidden;
+      min-width: 60px;
+      max-width: 120px;
+    }
+    .score-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--blue));
+      border-radius: 2px;
+      transition: width 0.8s ease;
+    }
+
+    .empty-lb {
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--text-3);
+      font-family: var(--font-mono);
+    }
+    .empty-lb .big { font-size: 3rem; opacity: 0.3; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="nav-logo">
+        <span class="bracket">[</span><span class="logo-text">CP_ARENA</span><span class="bracket">]</span>
+      </a>
+      <div class="nav-links">
+        <a href="problems.html" class="nav-link">Problems</a>
+        <a href="leaderboard.html" class="nav-link active">Leaderboard</a>
+      </div>
+      <div class="nav-right" id="nav-right"></div>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+    <div class="container">
+      <div class="page-header">
+        <div class="pre-title">// leaderboard</div>
+        <h1>Leaderboard</h1>
+        <p>Rankings based on total accepted points. Difficulty-weighted scoring.</p>
+      </div>
+
+      <!-- Scoring legend -->
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:28px;">
+        <div style="display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:0.78rem;color:var(--text-3)">
+          <span class="badge badge-easy" style="font-size:0.65rem">Easy</span> = 10 pts
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:0.78rem;color:var(--text-3)">
+          <span class="badge badge-medium" style="font-size:0.65rem">Medium</span> = 25 pts
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:0.78rem;color:var(--text-3)">
+          <span class="badge badge-hard" style="font-size:0.65rem">Hard</span> = 50 pts
+        </div>
+        <div style="margin-left:auto;font-family:var(--font-mono);font-size:0.75rem;color:var(--text-3)" id="last-updated"></div>
+      </div>
+
+      <!-- TOP 3 PODIUM -->
+      <div id="podium-area"></div>
+
+      <!-- FULL TABLE -->
+      <div class="lb-table-wrap anim-fade-up" id="table-area"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <p>CP Arena &mdash; <span class="accent">// Rankings update in real-time</span></p>
+    </div>
+  </footer>
+
+  <div id="toast-container"></div>
+
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const user = Auth.requireLogin();
+
+    /* ── NAV ── */
+    (function () {
+      const r = document.getElementById('nav-right');
+      r.innerHTML = `
+        <a href="profile.html?id=${user.id}" class="nav-profile-link">
+          <div class="nav-avatar">${user.username[0].toUpperCase()}</div>
+          <span>${user.username}</span>
+        </a>
+        ${user.role === 'admin' ? '<a href="admin/index.html" class="btn btn-outline btn-sm">Admin</a>' : ''}
+        <button class="nav-logout-btn" onclick="Auth.logout()">Logout</button>`;
+    })();
+
+    document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+
+    function render() {
+      const lb = Store.getLeaderboard();
+      const maxScore = lb.length ? lb[0].score : 1;
+
+      /* ── PODIUM ── */
+      const podiumArea = document.getElementById('podium-area');
+      if (lb.length === 0) {
+        podiumArea.innerHTML = '';
+      } else {
+        const medals = ['🥇', '🥈', '🥉'];
+        const top3 = lb.slice(0, Math.min(3, lb.length));
+        // Pad with empty if < 3
+        while (top3.length < 3) top3.push(null);
+        podiumArea.innerHTML = `<div class="lb-grid">
+          ${top3.map((p, i) => p ? `
+          <div class="podium-card podium-${i+1}">
+            <div class="podium-medal">${medals[i]}</div>
+            <div class="podium-avatar">${p.username[0].toUpperCase()}</div>
+            <div class="podium-name">${escHtml(p.username)}${p.userId === user.id ? ' <span style="color:var(--green);font-size:0.7rem">(you)</span>' : ''}</div>
+            <div class="podium-score">${p.score}</div>
+            <div class="podium-solved">${p.solved} solved</div>
+          </div>` : `<div class="podium-card podium-${i+1}" style="opacity:0.3"><div class="podium-medal">${medals[i]}</div><div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-3)">—</div></div>`
+          ).join('')}
+        </div>`;
+      }
+
+      /* ── TABLE ── */
+      const tableArea = document.getElementById('table-area');
+      if (lb.length === 0) {
+        tableArea.innerHTML = `<div class="empty-lb"><div class="big">🏆</div><p>No rankings yet. Start solving problems!</p></div>`;
+        return;
+      }
+
+      tableArea.innerHTML = `
+        <table class="lb-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Coder</th>
+              <th>Score</th>
+              <th>Solved</th>
+              <th>Last Accepted</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${lb.map((entry, i) => {
+              const rank = i + 1;
+              const rankClass = rank <= 3 ? `rank-${rank}` : '';
+              const isMe = entry.userId === user.id;
+              const pct = maxScore ? Math.round(entry.score / maxScore * 100) : 0;
+              return `
+              <tr class="${isMe ? 'is-me' : ''}">
+                <td class="rank-cell ${rankClass}">${rank}</td>
+                <td>
+                  <div class="user-cell">
+                    <div class="avatar">${entry.username[0].toUpperCase()}</div>
+                    <div>
+                      <a href="profile.html?user=${encodeURIComponent(entry.username)}" class="uname" style="text-decoration:none">${escHtml(entry.username)}</a>
+                    </div>
+                    ${isMe ? '<span class="me-badge">you</span>' : ''}
+                  </div>
+                </td>
+                <td>
+                  <div class="score-bar-wrap">
+                    <span class="score-cell">${entry.score}</span>
+                    <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%"></div></div>
+                  </div>
+                </td>
+                <td class="solved-cell">${entry.solved} problems</td>
+                <td class="time-cell">${entry.lastAccepted ? timeAgo(entry.lastAccepted) : '—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function timeAgo(iso) {
+      const diff = Date.now() - new Date(iso).getTime();
+      const m = Math.floor(diff / 60000);
+      if (m < 1) return 'just now';
+      if (m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60);
+      if (h < 24) return h + 'h ago';
+      return Math.floor(h / 24) + 'd ago';
+    }
+
+    function escHtml(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    render();
+    // Auto-refresh every 30 seconds
+    setInterval(() => { render(); document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString(); }, 30000);
+  </script>
+</body>
+</html>

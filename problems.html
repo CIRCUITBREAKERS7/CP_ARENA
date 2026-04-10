@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Problems — CP Arena</title>
+  <meta name="description" content="Browse and solve competitive programming problems. Filter by difficulty and tags." />
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <style>
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .filter-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-muted);
+      color: var(--text-2);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      padding: 6px 14px;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      letter-spacing: 0.04em;
+    }
+    .filter-btn:hover { border-color: var(--border-hover); color: var(--text-1); }
+    .filter-btn.active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+
+    .problems-table-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+    }
+    .problems-table-header {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-muted);
+      background: var(--bg-elevated);
+      gap: 12px;
+    }
+    .problems-table-header span {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .col-num    { width: 48px; }
+    .col-status { width: 32px; text-align: center; }
+    .col-title  { flex: 1; }
+    .col-diff   { width: 90px; }
+    .col-tags   { width: 220px; }
+    .col-pts    { width: 70px; text-align: right; }
+    .col-rate   { width: 80px; text-align: right; }
+
+    .problem-row .col-status { width: 32px; text-align: center; }
+    .problem-row .col-num { width: 48px; }
+    .problem-row .col-title { flex: 1; }
+    .problem-row .col-diff { width: 90px; }
+    .problem-row .col-tags { width: 220px; display: flex; flex-wrap: wrap; gap: 4px; }
+    .problem-row .col-pts { width: 70px; text-align: right; font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-3); }
+    .problem-row .col-rate { width: 80px; text-align: right; font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-3); }
+
+    @media (max-width: 768px) {
+      .col-tags, .col-rate { display: none; }
+    }
+
+    .solved-icon { color: var(--green); font-size: 0.85rem; }
+    .unsolved-icon { color: var(--text-3); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="nav-logo">
+        <span class="bracket">[</span><span class="logo-text">CP_ARENA</span><span class="bracket">]</span>
+      </a>
+      <div class="nav-links">
+        <a href="problems.html" class="nav-link active">Problems</a>
+        <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+      </div>
+      <div class="nav-right" id="nav-right"></div>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+    <div class="container">
+      <div class="page-header">
+        <div class="pre-title">// problem_set</div>
+        <h1>Problem Set</h1>
+        <p>Solve problems to earn points and climb the leaderboard.</p>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <div class="search-bar" style="max-width:300px">
+          <span class="search-icon">&gt;</span>
+          <input id="search-input" class="form-input" type="text" placeholder="Search problems..." oninput="renderProblems()" />
+        </div>
+        <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">All</button>
+        <button class="filter-btn" data-filter="Easy" onclick="setFilter('Easy',this)">Easy</button>
+        <button class="filter-btn" data-filter="Medium" onclick="setFilter('Medium',this)">Medium</button>
+        <button class="filter-btn" data-filter="Hard" onclick="setFilter('Hard',this)">Hard</button>
+        <button class="filter-btn" data-filter="solved" onclick="setFilter('solved',this)">✓ Solved</button>
+        <button class="filter-btn" data-filter="unsolved" onclick="setFilter('unsolved',this)">○ Unsolved</button>
+      </div>
+
+      <!-- Problem List -->
+      <div class="problems-table-wrap anim-fade-up">
+        <div class="problems-table-header">
+          <span class="col-status">#</span>
+          <span class="col-num">No.</span>
+          <span class="col-title">Title</span>
+          <span class="col-diff">Difficulty</span>
+          <span class="col-tags">Tags</span>
+          <span class="col-pts">Pts</span>
+          <span class="col-rate">Acc%</span>
+        </div>
+        <div id="problem-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <p>CP Arena &mdash; <span class="accent">// Built for Coders, by Coders</span></p>
+    </div>
+  </footer>
+
+  <div id="toast-container"></div>
+
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const user = Auth.requireLogin();
+    let currentFilter = 'all';
+    let solvedSet = new Set();
+
+    /* ── NAV ── */
+    (function () {
+      const r = document.getElementById('nav-right');
+      r.innerHTML = `
+        <a href="profile.html" class="nav-user-pill" style="text-decoration:none;cursor:pointer">
+          <div class="nav-avatar">${user.username[0].toUpperCase()}</div>
+          <span>${user.username}</span>
+        </a>
+        ${user.role === 'admin' ? '<a href="admin/index.html" class="btn btn-outline btn-sm">Admin</a>' : ''}
+        <button class="nav-logout-btn" onclick="Auth.logout()">Logout</button>`;
+      solvedSet = Store.getSolvedByUser(user.id);
+    })();
+
+    function setFilter(f, el) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      renderProblems();
+    }
+
+    function renderProblems() {
+      const q = document.getElementById('search-input').value.trim().toLowerCase();
+      let problems = Store.getProblems();
+
+      if (q) {
+        problems = problems.filter(p =>
+          p.title.toLowerCase().includes(q) ||
+          (p.tags || []).some(t => t.toLowerCase().includes(q))
+        );
+      }
+      if (currentFilter === 'Easy' || currentFilter === 'Medium' || currentFilter === 'Hard') {
+        problems = problems.filter(p => p.difficulty === currentFilter);
+      } else if (currentFilter === 'solved') {
+        problems = problems.filter(p => solvedSet.has(p.id));
+      } else if (currentFilter === 'unsolved') {
+        problems = problems.filter(p => !solvedSet.has(p.id));
+      }
+
+      const list = document.getElementById('problem-list');
+      if (!problems.length) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">⌿</div><p>No problems match your filter.</p></div>';
+        return;
+      }
+
+      list.innerHTML = problems.map(p => {
+        const stats = Store.getProblemStats(p.id);
+        const isSolved = solvedSet.has(p.id);
+        const diffClass = p.difficulty.toLowerCase();
+        const tagsHtml = (p.tags || []).slice(0, 3).map(t => `<span class="tag">${t}</span>`).join('');
+        return `
+        <a class="problem-row" href="problem.html?id=${p.id}">
+          <span class="col-status">${isSolved ? '<span class="solved-icon">✓</span>' : '<span class="unsolved-icon">○</span>'}</span>
+          <span class="col-num mono muted">${p.number}</span>
+          <span class="col-title"><strong class="prob-title">${p.title}</strong></span>
+          <span class="col-diff"><span class="badge badge-${diffClass}">${p.difficulty}</span></span>
+          <span class="col-tags">${tagsHtml}</span>
+          <span class="col-pts">${p.points}pts</span>
+          <span class="col-rate">${stats.rate}%</span>
+        </a>`;
+      }).join('');
+    }
+
+    renderProblems();
+
+    function showToast(msg, type = 'info') {
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      const icons = { success: '✓', error: '✗', info: 'ℹ', warn: '⚠' };
+      t.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+      document.getElementById('toast-container').appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+  </script>
+</body>
+</html>

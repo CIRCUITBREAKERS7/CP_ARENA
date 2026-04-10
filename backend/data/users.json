@@ -1,0 +1,14 @@
+[
+  {
+    "id": "u_admin",
+    "username": "admin",
+    "email": "admin@cparena.local",
+    "password": "$2b$10$i6btEn/9V7GcgIidxxL1quWgQXisNsIx8i1jyNlrt00mCvVuSBIo.",
+    "role": "admin",
+    "cfHandle": "",
+    "lcHandle": "",
+    "gfgHandle": "",
+    "avatar": "",
+    "createdAt": "2026-04-09T10:05:29.405Z"
+  }
+]

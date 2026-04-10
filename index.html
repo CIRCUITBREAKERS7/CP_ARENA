@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <title>CP Arena — Competitive Programming Platform</title>
+  <meta name="description" content="Compete, code, and conquer. The terminal-inspired competitive programming arena for the best coders." />
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <style>
+    /* ── HERO ───────────────────────────────────────────────────── */
+    #matrix-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      opacity: 0.18;
+    }
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 440px;
+      gap: 48px;
+      align-items: center;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 80px 24px;
+    }
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; padding: 40px 24px; }
+      .hero-left { text-align: center; }
+    }
+
+    /* Left side */
+    .hero-pre {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--green);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hero-pre::before {
+      content: '';
+      width: 32px; height: 1px;
+      background: var(--green);
+      display: inline-block;
+    }
+    .hero-title {
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+      margin-bottom: 24px;
+    }
+    .hero-title .line-1 { color: var(--text-1); display: block; }
+    .hero-title .line-2 {
+      display: block;
+      background: linear-gradient(135deg, var(--green) 0%, var(--blue) 60%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: 1.05rem;
+      color: var(--text-2);
+      max-width: 520px;
+      line-height: 1.75;
+      margin-bottom: 36px;
+    }
+    .hero-stats {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 40px;
+    }
+    .hero-stat { text-align: left; }
+    .hero-stat .val {
+      font-family: var(--font-mono);
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--green);
+      display: block;
+      line-height: 1;
+    }
+    .hero-stat .lbl {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    /* Feature pills */
+    .feature-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 40px;
+    }
+    .feat-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 6px 14px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-2);
+      backdrop-filter: blur(8px);
+    }
+    .feat-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+    /* ── AUTH CARD ───────────────────────────────────────────────── */
+    .auth-card {
+      background: rgba(10, 14, 26, 0.85);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      animation: fadeInUp 0.6s ease 0.2s both;
+    }
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-muted);
+    }
+    .auth-tab {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-3);
+      cursor: pointer;
+      transition: all var(--transition);
+      letter-spacing: 0.05em;
+      position: relative;
+    }
+    .auth-tab.active { color: var(--green); background: var(--green-dimmer); }
+    .auth-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--green);
+    }
+    .auth-body { padding: 28px; display: flex; flex-direction: column; gap: 18px; }
+    .auth-form { display: flex; flex-direction: column; gap: 16px; }
+    .auth-form.hidden { display: none; }
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-3);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-muted);
+    }
+    .auth-header {
+      padding: 20px 28px 0;
+    }
+    .auth-header .title {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-1);
+      margin-bottom: 4px;
+    }
+    .auth-header .sub {
+      font-size: 0.83rem;
+      color: var(--text-3);
+    }
+
+    /* Terminal prompt decoration */
+    .terminal-prompt {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-3);
+      padding: 10px 14px;
+      background: var(--bg-base);
+      border-radius: 8px;
+      border: 1px solid var(--border-muted);
+    }
+    .terminal-prompt .ps1 { color: var(--green); margin-right: 8px; }
+    .terminal-prompt .cmd { color: var(--blue); }
+  </style>
+</head>
+<body>
+  <canvas id="matrix-canvas"></canvas>
+
+  <div class="page-wrapper">
+    <div class="hero">
+      <!-- LEFT: Branding -->
+      <div class="hero-left anim-fade-up">
+        <div class="hero-pre">// Welcome to the Arena</div>
+        <h1 class="hero-title">
+          <span class="line-1">Code.</span>
+          <span class="line-2">Compete.<span class="cursor"></span></span>
+        </h1>
+        <p class="hero-sub">
+          A terminal-inspired platform where you sharpen your algorithms,
+          submit your solutions, and climb the leaderboard.
+        </p>
+        <div class="hero-stats">
+          <div class="hero-stat" id="stat-problems">
+            <span class="val">—</span>
+            <span class="lbl">Problems</span>
+          </div>
+          <div class="hero-stat" id="stat-students">
+            <span class="val">—</span>
+            <span class="lbl">Coders</span>
+          </div>
+          <div class="hero-stat" id="stat-submissions">
+            <span class="val">—</span>
+            <span class="lbl">Submissions</span>
+          </div>
+        </div>
+        <div class="feature-pills">
+          <div class="feat-pill"><span class="dot"></span> Custom Problems</div>
+          <div class="feat-pill"><span class="dot"></span> Live Leaderboard</div>
+          <div class="feat-pill"><span class="dot"></span> Multi-Language</div>
+          <div class="feat-pill"><span class="dot"></span> Admin Panel</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Auth card -->
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">// Login</button>
+          <button class="auth-tab" id="tab-register" onclick="switchTab('register')">// Register</button>
+        </div>
+
+        <div class="auth-header">
+          <div class="terminal-prompt" id="auth-prompt">
+            <span class="ps1">$</span><span class="cmd" id="prompt-cmd">auth --login</span>
+          </div>
+        </div>
+
+        <div class="auth-body">
+          <!-- Login form -->
+          <form class="auth-form" id="form-login" onsubmit="doLogin(event)">
+            <div class="form-group">
+              <label class="form-label">Username or Email <span class="req">*</span></label>
+              <input id="login-user" class="form-input" type="text" placeholder="your_username" autocomplete="username" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password <span class="req">*</span></label>
+              <input id="login-pass" class="form-input" type="password" placeholder="••••••••" autocomplete="current-password" required />
+            </div>
+            <div class="form-error" id="login-error"></div>
+            <button class="btn btn-primary" type="submit" id="login-btn" style="width:100%">
+              <span>Login</span>
+            </button>
+          </form>
+
+          <!-- Google Sign-In -->
+          <div style="margin-top:14px;display:flex;flex-direction:column;align-items:center;gap:10px">
+            <div style="font-family:var(--font-mono);font-size:.72rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em">or continue with</div>
+            <div id="google-signin-btn" style="width:100%"></div>
+          </div>
+
+          <!-- Register form -->
+          <form class="auth-form hidden" id="form-register" onsubmit="doRegister(event)">
+            <div class="form-group" style="display:flex;gap:16px;margin-bottom:8px">
+              <label style="cursor:pointer;font-family:var(--font-mono);font-size:0.85rem;color:var(--text-1)">
+                <input type="radio" name="reg_role" value="student" checked onchange="toggleAdmin('reg')" style="accent-color:var(--green)"> Student
+              </label>
+              <label style="cursor:pointer;font-family:var(--font-mono);font-size:0.85rem;color:var(--text-1)">
+                <input type="radio" name="reg_role" value="admin" onchange="toggleAdmin('reg')" style="accent-color:var(--green)"> Admin
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Username <span class="req">*</span></label>
+              <input id="reg-user" class="form-input" type="text" placeholder="choose_a_username" autocomplete="username" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email <span class="req">*</span></label>
+              <input id="reg-email" class="form-input" type="email" placeholder="you@example.com" autocomplete="email" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password <span class="req">*</span></label>
+              <input id="reg-pass" class="form-input" type="password" placeholder="min 6 characters" autocomplete="new-password" required />
+            </div>
+            <div class="form-error" id="reg-error"></div>
+            <button class="btn btn-primary" type="submit" id="reg-btn" style="width:100%">
+              <span>Create Account</span>
+            </button>
+          </form>
+
+          <div class="auth-divider">or create an account</div>
+          <p style="font-family: var(--font-mono); font-size:0.78rem; color: var(--text-3); text-align:center;">
+            Admin accounts are redirected to the admin dashboard automatically.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    /* ── ENSURE ADMIN ROLE + REDIRECT IF LOGGED IN ── */
+    (function () {
+      // Step 1: Fix stale admin user in the users list
+      const users = Store.getUsers();
+      const adminIdx = users.findIndex(u => u.username === 'admin');
+      if (adminIdx < 0) {
+        Store.createUser({ username: 'admin', email: 'admin@cparena.local', password: Store.getAdminPassword(), role: 'admin' });
+      } else if (users[adminIdx].role !== 'admin') {
+        users[adminIdx].role = 'admin';
+        Store._saveUsers(users);
+      }
+
+      // Step 2: Fix stale current session
+      let u = Store.getCurrentUser();
+      if (u && u.username === 'admin' && u.role !== 'admin') {
+        u.role = 'admin';
+        Store._set(Store.K.CURRENT_USER, u);
+        u = Store.getCurrentUser();
+      }
+
+      // Step 3: Redirect if already logged in
+      if (u) {
+        const isAdmin = u.role === 'admin' || u.username === 'admin';
+        window.location.href = isAdmin ? 'admin/index.html' : 'problems.html';
+      }
+    })();
+
+    /* ── FILL STATS ── */
+    (function () {
+      document.querySelector('#stat-problems .val').textContent = Store.getProblems().length;
+      document.querySelector('#stat-students .val').textContent = Store.getUsers().filter(u => u.role !== 'admin').length;
+      document.querySelector('#stat-submissions .val').textContent = Store.getSubmissions().length;
+    })();
+
+    /* ── TAB SWITCH ── */
+    function switchTab(tab) {
+      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+      document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+      document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('form-register').classList.toggle('hidden', tab !== 'register');
+      document.getElementById('prompt-cmd').textContent = tab === 'login' ? 'auth --login' : 'auth --register';
+    }
+
+    function toggleAdmin(ctx) {
+      if (ctx === 'login') {
+        const isAdm = document.querySelector('input[name="login_role"]:checked').value === 'admin';
+        document.getElementById('login-admin-wrap').classList.toggle('hidden', !isAdm);
+      }
+    }
+
+    /* ── LOGIN ── */
+    function doLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      const err = document.getElementById('login-error');
+
+      err.classList.remove('visible');
+      btn.innerHTML = '<span class="btn-spinner"></span>';
+      btn.disabled = true;
+      setTimeout(() => {
+        const res = Auth.login(
+          document.getElementById('login-user').value.trim(),
+          document.getElementById('login-pass').value
+        );
+        if (res.ok) {
+          showToast('Welcome back, ' + res.user.username + '!', 'success');
+          const isAdmin = res.user.role === 'admin' || res.user.username === 'admin';
+          setTimeout(() => { window.location.href = isAdmin ? 'admin/index.html' : 'problems.html'; }, 600);
+        } else {
+          err.textContent = '// ERROR: ' + res.error;
+          err.classList.add('visible');
+          btn.innerHTML = '<span>Login</span>';
+          btn.disabled = false;
+        }
+      }, 400);
+    }
+
+    /* ── REGISTER ── */
+    function doRegister(e) {
+      e.preventDefault();
+      const btn = document.getElementById('reg-btn');
+      const err = document.getElementById('reg-error');
+      const role = document.querySelector('input[name="reg_role"]:checked').value;
+
+      err.classList.remove('visible');
+      btn.innerHTML = '<span class="btn-spinner"></span>';
+      btn.disabled = true;
+      setTimeout(() => {
+        const res = Auth.register(
+          document.getElementById('reg-user').value.trim(),
+          document.getElementById('reg-email').value.trim(),
+          document.getElementById('reg-pass').value,
+          role
+        );
+        if (res.ok) {
+          showToast('Account created. Welcome, ' + res.user.username + '!', 'success');
+          setTimeout(() => { window.location.href = res.user.role === 'admin' ? 'admin/index.html' : 'problems.html'; }, 600);
+        } else {
+          err.textContent = '// ERROR: ' + res.error;
+          err.classList.add('visible');
+          btn.innerHTML = '<span>Create Account</span>';
+          btn.disabled = false;
+        }
+      }, 400);
+    }
+
+    /* ── TOAST ── */
+    function showToast(msg, type = 'info') {
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      const icons = { success: '✓', error: '✗', info: 'ℹ', warn: '⚠' };
+      t.innerHTML = `<span>${icons[type] || 'ℹ'}</span><span>${msg}</span>`;
+      document.getElementById('toast-container').appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    }
+
+    /* ── MATRIX RAIN ── */
+    (function () {
+      const canvas = document.getElementById('matrix-canvas');
+      const ctx = canvas.getContext('2d');
+      const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>{}[]()+-=*/&|^%#@!?;:.,_~';
+      const FS = 14;
+      let cols, drops;
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        cols = Math.floor(canvas.width / FS);
+        drops = Array.from({ length: cols }, () => Math.random() * -50);
+      }
+
+      function draw() {
+        ctx.fillStyle = 'rgba(5, 9, 26, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = FS + 'px JetBrains Mono';
+        drops.forEach((y, i) => {
+          const char = CHARS[Math.floor(Math.random() * CHARS.length)];
+          const alpha = Math.random() * 0.7 + 0.1;
+          ctx.fillStyle = `rgba(0, 255, 136, ${alpha})`;
+          ctx.fillText(char, i * FS, y * FS);
+          if (y * FS > canvas.height && Math.random() > 0.975) drops[i] = 0;
+          drops[i] += 0.5;
+        });
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+      setInterval(draw, 40);
+    })();
+
+    /* ── GOOGLE SIGN-IN ── */
+    const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // ← Replace with your Client ID from console.cloud.google.com
+
+    window.onGoogleLibraryLoad = function () {
+      if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') return; // skip if not configured
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential,
+        auto_select: false,
+      });
+      google.accounts.id.renderButton(
+        document.getElementById('google-signin-btn'),
+        { theme: 'filled_black', size: 'large', width: 340, text: 'continue_with' }
+      );
+    };
+
+    async function handleGoogleCredential(response) {
+      const btn = document.getElementById('google-signin-btn');
+      btn.innerHTML = '<div style="font-family:var(--font-mono);font-size:.8rem;color:var(--text-3)">Verifying…</div>';
+      try {
+        const res = await fetch('http://localhost:3001/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential: response.credential }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          API.setToken(data.token);
+          Store.setCurrentUser(data.user);
+          showToast('Welcome, ' + data.user.username + '!', 'success');
+          const isAdmin = data.user.role === 'admin' || data.user.username === 'admin';
+          setTimeout(() => { window.location.href = isAdmin ? 'admin/index.html' : 'problems.html'; }, 600);
+        } else {
+          showToast('Google login failed: ' + (data.error || 'Unknown error'), 'error');
+          // Restore button
+          google.accounts.id.renderButton(document.getElementById('google-signin-btn'),
+            { theme: 'filled_black', size: 'large', width: 340 });
+        }
+      } catch (e) {
+        showToast('Backend unreachable. Start the backend server.', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

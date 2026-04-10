@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Profile — CP Arena</title>
+  <link rel="stylesheet" href="css/theme.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <style>
+    .profile-hero{background:linear-gradient(135deg,rgba(0,255,136,.06) 0%,rgba(0,180,255,.06) 100%);border-bottom:1px solid var(--border);padding:40px 0 0}
+    .profile-inner{max-width:1100px;margin:0 auto;padding:0 24px}
+    .profile-header{display:flex;align-items:flex-end;gap:24px;padding-bottom:24px;flex-wrap:wrap}
+    .profile-avatar-wrap{position:relative}
+    .profile-avatar{width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--blue));display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:800;font-size:2.4rem;color:var(--bg-base);box-shadow:0 0 32px rgba(0,255,136,.35);flex-shrink:0;background-size:cover;background-position:center;overflow:hidden;cursor:pointer;position:relative}
+    .profile-avatar .avatar-edit{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;font-size:1.4rem;color:#fff;border-radius:50%}
+    .profile-avatar:hover .avatar-edit{opacity:1}
+    #avatar-input{display:none}
+    .rank-crown{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:1.4rem;line-height:1}
+    .profile-info{flex:1}
+    .profile-name{font-family:var(--font-mono);font-size:1.7rem;font-weight:800;color:var(--text-1);margin-bottom:4px}
+    .profile-sub{font-family:var(--font-mono);font-size:.8rem;color:var(--text-3);display:flex;gap:16px;flex-wrap:wrap}
+    .profile-sub span{display:flex;align-items:center;gap:4px}
+    .profile-role{display:inline-block;font-family:var(--font-mono);font-size:.72rem;padding:2px 10px;border-radius:50px;margin-left:8px}
+    .role-admin{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,71,87,.25)}
+    .role-student{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(0,180,255,.2)}
+    .profile-rank-badge{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:.82rem;padding:6px 14px;border-radius:50px;border:1px solid var(--border);background:var(--bg-card);backdrop-filter:blur(8px);white-space:nowrap}
+    /* Stats */
+    .stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:28px 0}
+    @media(max-width:768px){.stats-grid{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:480px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+    .stat-box{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;backdrop-filter:blur(12px);text-align:center}
+    .stat-box .sv{font-family:var(--font-mono);font-size:1.8rem;font-weight:800;color:var(--green);line-height:1;display:block}
+    .stat-box .sl{font-family:var(--font-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-top:4px;display:block}
+    /* Difficulty */
+    .diff-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px}
+    @media(max-width:600px){.diff-grid{grid-template-columns:1fr}}
+    .diff-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;backdrop-filter:blur(12px)}
+    .diff-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .diff-count{font-family:var(--font-mono);font-size:1.2rem;font-weight:800}
+    .diff-bar-bg{height:5px;background:var(--bg-base);border-radius:3px;overflow:hidden}
+    .diff-bar-fill{height:100%;border-radius:3px;transition:width .8s ease}
+    .easy-fill{background:var(--easy)}.medium-fill{background:var(--medium)}.hard-fill{background:var(--hard)}
+    /* Tabs */
+    .profile-tabs{margin-bottom:20px}
+    /* Solved grid */
+    .solved-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:32px}
+    .solved-chip{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;display:flex;align-items:center;gap:10px;text-decoration:none;transition:all var(--transition-fast)}
+    .solved-chip:hover{border-color:var(--border-hover);background:var(--bg-card-hover);transform:translateY(-1px)}
+    .solved-chip .sc-num{font-family:var(--font-mono);font-size:.75rem;color:var(--text-3);width:24px}
+    .solved-chip .sc-title{font-size:.84rem;font-weight:600;color:var(--text-1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    /* Sub table */
+    .sub-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:.8rem}
+    .sub-table thead th{padding:9px 14px;text-align:left;background:var(--bg-elevated);border-bottom:1px solid var(--border);color:var(--text-3);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+    .sub-table tbody tr{border-bottom:1px solid var(--border-muted);transition:background var(--transition-fast)}
+    .sub-table tbody tr:hover{background:var(--bg-elevated)}.sub-table tbody td{padding:9px 14px;vertical-align:middle}
+    .vb-ac{color:var(--accepted)}.vb-wa{color:var(--wrong)}.vb-ce{color:var(--ce)}.vb-re{color:var(--tle)}.vb-p{color:var(--pending)}
+    /* Empty */
+    /* Heatmap */
+    .heatmap-container{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:28px;backdrop-filter:blur(12px);overflow-x:auto}
+    .heatmap-title{font-family:var(--font-mono);font-size:1.1rem;font-weight:800;margin-bottom:16px;color:var(--text-1)}
+    .heatmap-grid{display:grid;grid-template-rows:repeat(7,1fr);grid-auto-flow:column;gap:4px}
+    .heatmap-cell{width:12px;height:12px;border-radius:2px;background:var(--bg-elevated);position:relative}
+    /* Local Green */
+    .hm-c1{background:rgba(0,255,136,.3)}.hm-c2{background:rgba(0,255,136,.6)}.hm-c3{background:rgba(0,255,136,.85)}.hm-c4{background:#00ff88;box-shadow:0 0 8px rgba(0,255,136,.6)}
+    /* LC Yellow (ffa116) */
+    .hm-lc.hm-c1{background:rgba(255,161,22,.3)}.hm-lc.hm-c2{background:rgba(255,161,22,.6)}.hm-lc.hm-c3{background:rgba(255,161,22,.85)}.hm-lc.hm-c4{background:#ffa116;box-shadow:0 0 8px rgba(255,161,22,.6)}
+    /* CF Blue (1f8bcb) */
+    .hm-cf.hm-c1{background:rgba(31,139,203,.3)}.hm-cf.hm-c2{background:rgba(31,139,203,.6)}.hm-cf.hm-c3{background:rgba(31,139,203,.85)}.hm-cf.hm-c4{background:#1f8bcb;box-shadow:0 0 8px rgba(31,139,203,.6)}
+    /* GFG Green (2f8D46) */
+    .hm-gfg.hm-c1{background:rgba(47,141,70,.3)}.hm-gfg.hm-c2{background:rgba(47,141,70,.6)}.hm-gfg.hm-c3{background:rgba(47,141,70,.85)}.hm-gfg.hm-c4{background:#2f8D46;box-shadow:0 0 8px rgba(47,141,70,.6)}
+
+    /* Tooltip — fixed position, never overflows */
+    #hm-tooltip {
+      position: fixed;
+      background: var(--bg-elevated);
+      color: var(--text-1);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      white-space: nowrap;
+      z-index: 9999;
+      border: 1px solid var(--border);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .12s ease;
+    }
+    #hm-tooltip.visible { opacity: 1; }
+    /* External Handles */
+    .ext-handles{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .ext-badge{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:.75rem;background:rgba(255,255,255,0.05);padding:4px 12px;border-radius:50px;border:1px solid var(--border-muted)}
+    .ext-badge.has{background:var(--bg-elevated);border-color:var(--border)}
+    .ext-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:16px;margin-bottom:8px;padding-top:16px;border-top:1px dashed var(--border-muted)}
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="problems.html" class="nav-logo"><span class="bracket">[</span><span class="logo-text">CP_ARENA</span><span class="bracket">]</span></a>
+    <div class="nav-links">
+      <a href="problems.html" class="nav-link">Problems</a>
+      <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+    </div>
+    <div class="nav-right" id="nav-right"></div>
+  </div>
+</nav>
+
+<div class="profile-hero">
+  <div class="profile-inner">
+    <div class="profile-header" id="prof-header">
+      <div style="color:var(--text-3);font-family:var(--font-mono)">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<div style="max-width:1100px;margin:0 auto;padding:28px 24px">
+  <!-- Stats -->
+  <div class="stats-grid" id="stats-grid"></div>
+  <!-- Difficulty breakdown -->
+  <div class="diff-grid" id="diff-grid"></div>
+
+  <!-- Heatmap & Externals -->
+  <div class="heatmap-container" id="heatmap-section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+      <div class="heatmap-title" style="margin:0">Activity Heatmap</div>
+      <div id="ext-handles-disp" class="ext-handles" style="margin:0"></div>
+    </div>
+    <div id="heatmap-grid" class="heatmap-grid"></div>
+    <div id="ext-form-container" style="display:none">
+      <form class="ext-form" id="ext-form" onsubmit="saveExternal(event)">
+        <div><label class="form-label">Codeforces</label><input type="text" id="inp-cf" class="form-input" placeholder="Handle"></div>
+        <div><label class="form-label">LeetCode</label><input type="text" id="inp-lc" class="form-input" placeholder="Username"></div>
+        <div><label class="form-label">GeeksforGeeks</label><input type="text" id="inp-gfg" class="form-input" placeholder="Handle"></div>
+        <div style="display:flex;align-items:flex-end"><button type="submit" class="btn btn-outline btn-sm" style="height:38px">Save Handles</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs profile-tabs" id="prof-tabs">
+    <button class="tab-btn active" id="tab-solved" onclick="showTab('solved')">Solved Problems</button>
+    <button class="tab-btn" id="tab-subs" onclick="showTab('subs')">Submissions</button>
+  </div>
+  <div id="tab-content-solved"></div>
+  <div id="tab-content-subs" style="display:none"></div>
+</div>
+
+<div id="toast-container"></div>
+<div id="hm-tooltip"></div>
+<script src="js/store.js"></script>
+<script src="js/auth.js"></script>
+<script>
+const me = Auth.requireLogin();
+const targetName = new URLSearchParams(location.search).get('user');
+let profileUser = null;
+
+/* NAV */
+(function(){
+  const r=document.getElementById('nav-right');
+  r.innerHTML=`<a href="profile.html" class="nav-user-pill" style="text-decoration:none">
+    <div class="nav-avatar">${me.username[0].toUpperCase()}</div><span>${me.username}</span></a>
+    <button class="nav-logout-btn" onclick="Auth.logout()">Logout</button>`;
+})();
+
+/* Load profile */
+(function(){
+  if(targetName){
+    profileUser = Store.getUserByName(targetName);
+    if(!profileUser){ document.getElementById('prof-header').innerHTML='<div style="color:var(--hard);font-family:var(--font-mono)">User not found.</div>'; return; }
+  } else {
+    profileUser = Store.getUserById(me.id);
+    if(!profileUser){ Auth.logout(); return; }
+  }
+  document.title = profileUser.username + ' — CP Arena';
+  renderProfile();
+})();
+
+function renderProfile(){
+  const stats = Store.getUserStats(profileUser.id);
+  const lb = Store.getLeaderboard();
+  const rank = lb.findIndex(e=>e.userId===profileUser.id)+1 || '—';
+  const isMe = profileUser.id === me.id;
+
+  /* Header */
+  const topRankEmoji = typeof rank==='number' ? (rank===1?'👑':rank===2?'🥈':rank===3?'🥉':'') : '';
+  const savedAvatar = Store.getAvatar(profileUser.id);
+  const avatarStyle = savedAvatar ? `background-image:url('${savedAvatar}');background-size:cover;background-position:center;` : '';
+  const avatarContent = savedAvatar ? '' : profileUser.username[0].toUpperCase();
+  document.getElementById('prof-header').innerHTML=`
+    <div class="profile-avatar-wrap">
+      ${topRankEmoji?`<div class="rank-crown">${topRankEmoji}</div>`:''}
+      <div class="profile-avatar" id="avatar-div" style="${avatarStyle}" onclick="isMe&&document.getElementById('avatar-input').click()">
+        ${avatarContent}
+        ${isMe ? '<div class="avatar-edit">📷</div>' : ''}
+      </div>
+      ${isMe ? '<input type="file" id="avatar-input" accept="image/*" onchange="uploadAvatar(event)">' : ''}
+    </div>
+    <div class="profile-info">
+      <div class="profile-name">${esc(profileUser.username)}<span class="profile-role role-${profileUser.role}">${profileUser.role}</span></div>
+      <div class="profile-sub">
+        <span>📅 Joined ${new Date(profileUser.createdAt).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</span>
+        <span>📧 ${esc(isMe?profileUser.email:'—')}</span>
+      </div>
+    </div>
+    <div class="profile-rank-badge">
+      <span style="color:var(--green);font-weight:800">#${rank}</span>
+      <span style="color:var(--text-3)">Global Rank</span>
+    </div>`;
+
+  /* Stats */
+  document.getElementById('stats-grid').innerHTML=[
+    {sv:typeof rank==='number'?'#'+rank:'—',sl:'Rank'},
+    {sv:stats.score,sl:'Score'},
+    {sv:stats.totalSolved,sl:'Solved'},
+    {sv:stats.totalSubs,sl:'Submissions'},
+    {sv:stats.acceptRate+'%',sl:'Accept Rate'},
+  ].map(s=>`<div class="stat-box"><span class="sv">${s.sv}</span><span class="sl">${s.sl}</span></div>`).join('');
+
+  /* Difficulty */
+  const easyPct = stats.easyTotal ? Math.round(stats.easySolved/stats.easyTotal*100) : 0;
+  const medPct  = stats.medTotal  ? Math.round(stats.medSolved/stats.medTotal*100)  : 0;
+  const hardPct = stats.hardTotal ? Math.round(stats.hardSolved/stats.hardTotal*100): 0;
+  document.getElementById('diff-grid').innerHTML=`
+    <div class="diff-card">
+      <div class="diff-top"><span class="badge badge-easy">Easy</span><span class="diff-count" style="color:var(--easy)">${stats.easySolved}<span style="color:var(--text-3);font-size:.75rem;font-weight:400">/${stats.easyTotal}</span></span></div>
+      <div class="diff-bar-bg"><div class="diff-bar-fill easy-fill" style="width:${easyPct}%"></div></div>
+    </div>
+    <div class="diff-card">
+      <div class="diff-top"><span class="badge badge-medium">Medium</span><span class="diff-count" style="color:var(--medium)">${stats.medSolved}<span style="color:var(--text-3);font-size:.75rem;font-weight:400">/${stats.medTotal}</span></span></div>
+      <div class="diff-bar-bg"><div class="diff-bar-fill medium-fill" style="width:${medPct}%"></div></div>
+    </div>
+    <div class="diff-card">
+      <div class="diff-top"><span class="badge badge-hard">Hard</span><span class="diff-count" style="color:var(--hard)">${stats.hardSolved}<span style="color:var(--text-3);font-size:.75rem;font-weight:400">/${stats.hardTotal}</span></span></div>
+      <div class="diff-bar-bg"><div class="diff-bar-fill hard-fill" style="width:${hardPct}%"></div></div>
+    </div>`;
+
+  renderHeatmapAndExternals();
+  renderSolvedTab(stats);
+  renderSubsTab(stats);
+}
+
+function renderSolvedTab(stats){
+  const el=document.getElementById('tab-content-solved');
+  if(!stats.solvedProblems.length){ el.innerHTML='<div class="profile-empty">No problems solved yet. <a href="problems.html">Start solving!</a></div>'; return; }
+  el.innerHTML=`<div class="solved-grid">${stats.solvedProblems.sort((a,b)=>a.number-b.number).map(p=>`
+    <a class="solved-chip" href="problem.html?id=${p.id}">
+      <span class="sc-num">${p.number}</span>
+      <span class="sc-title">${esc(p.title)}</span>
+      <span class="badge badge-${p.difficulty.toLowerCase()}" style="flex-shrink:0">${p.difficulty}</span>
+    </a>`).join('')}</div>`;
+}
+
+function renderSubsTab(stats){
+  const el=document.getElementById('tab-content-subs');
+  if(!stats.recentSubs.length){ el.innerHTML='<div class="profile-empty">No submissions yet.</div>'; return; }
+  const VBL={accepted:'<span class="vb-ac">✓ Accepted</span>',wrong_answer:'<span class="vb-wa">✗ Wrong Answer</span>',compile_error:'<span class="vb-ce">⚠ CE</span>',runtime_error:'<span class="vb-re">⚡ RE</span>',pending:'<span class="vb-p">Pending</span>'};
+  const LANG={cpp:'C++',python:'Python 3',java:'Java',javascript:'JavaScript'};
+  el.innerHTML=`<div class="table-wrap"><table class="sub-table">
+    <thead><tr><th>Time</th><th>Problem</th><th>Language</th><th>Verdict</th><th>Score</th></tr></thead>
+    <tbody>${stats.recentSubs.map(s=>`<tr>
+      <td style="color:var(--text-3);font-size:.75rem;white-space:nowrap">${new Date(s.submittedAt).toLocaleString()}</td>
+      <td><a href="problem.html?id=${s.problemId}" style="color:var(--text-1);font-weight:600">${esc(s.problemTitle)}</a></td>
+      <td style="color:var(--blue)">${LANG[s.language]||s.language}</td>
+      <td>${VBL[s.verdict]||(s.verdict)}</td>
+      <td style="color:var(--green)">${s.score||0}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function showTab(name){
+  ['solved','subs'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===name);
+    document.getElementById('tab-content-'+t).style.display=t===name?'':'none';
+  });
+}
+
+/* ── EXTERNAL PLATFORMS ── */
+async function renderHeatmapAndExternals() {
+  const isMe = profileUser.id === me.id;
+  const cf  = profileUser.cfHandle  || '';
+  const lc  = profileUser.lcHandle  || '';
+  const gfg = profileUser.gfgHandle || '';
+
+  // Show edit form only for self
+  if (isMe) {
+    document.getElementById('ext-form-container').style.display = 'block';
+    document.getElementById('inp-cf').value  = cf;
+    document.getElementById('inp-lc').value  = lc;
+    document.getElementById('inp-gfg').value = gfg;
+  }
+
+  // Build badges — start with loading state for CF
+  const disp = document.getElementById('ext-handles-disp');
+  disp.innerHTML = [
+    cf  ? `<div class="ext-badge has" id="badge-cf"><span style="color:#1f8bcb;font-weight:bold">CF</span> <a href="https://codeforces.com/profile/${cf}" target="_blank" style="color:var(--text-1);text-decoration:none">${cf}</a> <span id="cf-count" class="plat-count" style="color:var(--text-3);font-size:.7rem">…</span></div>` : '',
+    lc  ? `<div class="ext-badge has" id="badge-lc"><span style="color:#ffa116;font-weight:bold">LC</span> <a href="https://leetcode.com/${lc}" target="_blank" style="color:var(--text-1);text-decoration:none">${lc}</a> <span id="lc-count" class="plat-count" style="color:var(--text-3);font-size:.7rem">…</span></div>` : '',
+    gfg ? `<div class="ext-badge has" id="badge-gfg"><span style="color:#2f8D46;font-weight:bold">GFG</span> <a href="https://auth.geeksforgeeks.org/user/${gfg}" target="_blank" style="color:var(--text-1);text-decoration:none">${gfg}</a> <span class="plat-count" style="color:var(--text-3);font-size:.7rem">…</span></div>` : '',
+  ].filter(Boolean).join('');
+
+  // Render heatmap with local data first (instant)
+  renderHeatmap(cf, lc, gfg, {});
+
+  // Fetch real Codeforces data if handle exists
+  if (cf) {
+    try {
+      const res  = await fetch(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(cf)}&from=1&count=500`);
+      const data = await res.json();
+      if (data.status === 'OK') {
+        const accepted = data.result.filter(s => s.verdict === 'OK');
+        const distinct = new Set(accepted.map(s => `${s.problem.contestId}-${s.problem.index}`));
+
+        // Count: problems solved
+        const cfEl = document.getElementById('cf-count');
+        if (cfEl) cfEl.textContent = `· ${distinct.size} solved`;
+
+        // Build date map from CF submissions
+        const cfDates = {};
+        accepted.forEach(s => {
+          const d = new Date(s.creationTimeSeconds * 1000);
+          const str = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+          cfDates[str] = (cfDates[str] || 0) + 1;
+        });
+
+        // Re-render heatmap with real CF data
+        renderHeatmap(cf, lc, gfg, cfDates);
+      }
+    } catch(e) {
+      const cfEl = document.getElementById('cf-count');
+      if (cfEl) cfEl.textContent = '· offline';
+    }
+  }
+
+  // Fetch real LeetCode data via alfa-leetcode-api
+  if (lc) {
+    try {
+      const [profileRes, calRes] = await Promise.all([
+        fetch(`https://alfa-leetcode-api.onrender.com/${encodeURIComponent(lc)}/profile`),
+        fetch(`https://alfa-leetcode-api.onrender.com/${encodeURIComponent(lc)}/calendar`),
+      ]);
+      const profileData = await profileRes.json();
+      const calData     = await calRes.json();
+
+      // Show solved count on LC badge
+      const lcEl = document.getElementById('lc-count');
+      if (lcEl && profileData.totalSolved != null) lcEl.textContent = `· ${profileData.totalSolved} solved`;
+
+      // Merge LC calendar into heatmap
+      // submissionCalendar can be a JSON string or already an object
+      let calObj = calData.submissionCalendar;
+      if (typeof calObj === 'string') {
+        try { calObj = JSON.parse(calObj); } catch { calObj = null; }
+      }
+      if (calObj && typeof calObj === 'object') {
+        const lcDates = {};
+        Object.entries(calObj).forEach(([ts, cnt]) => {
+          const d = new Date(parseInt(ts) * 1000);
+          const str = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+          lcDates[str] = cnt;
+        });
+        renderHeatmapMerge('lc', lcDates);
+      }
+    } catch(e) {
+      console.log('LC API unavailable:', e.message);
+      const lcEl = document.getElementById('lc-count');
+      if (lcEl) lcEl.textContent = '· offline';
+    }
+  }
+
+  // Fetch real GFG data via public stats API
+  if (gfg) {
+    try {
+      const res  = await fetch(`https://geeks-for-geeks-stats-api-neeraj.vercel.app/?userName=${encodeURIComponent(gfg)}`);
+      const data = await res.json();
+      const gfgEl = document.querySelector('#badge-gfg .plat-count');
+      if (gfgEl && data.totalProblemsSolved) gfgEl.textContent = `· ${data.totalProblemsSolved} solved`;
+    } catch(e) {
+      console.log('GFG API unavailable:', e.message);
+    }
+  }
+}
+
+function renderHeatmap(cf, lc, gfg, cfRealDates) {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  // Get local submission dates
+  const localSubsCount = {};
+  const subs = Store.getSubmissionsByUser(profileUser.id);
+  subs.forEach(s => {
+    const d = new Date(s.submittedAt);
+    const str = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    localSubsCount[str] = (localSubsCount[str] || 0) + 1;
+  });
+
+  // Seed-based consistent random for LC/GFG decoration
+  let seed = 0;
+  for(let i=0;i<profileUser.username.length;i++) seed += profileUser.username.charCodeAt(i);
+  const rng = () => { let x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
+
+  const cells = [];
+  for (let i = 364; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const str = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+
+    let count = 0;
+    let platform = 'local';
+
+    // Real CF data takes priority
+    if (cfRealDates[str]) {
+      count = cfRealDates[str];
+      platform = 'cf';
+    }
+
+    // Overlay local platform submissions
+    if (localSubsCount[str]) {
+      if (count === 0) {
+        count = localSubsCount[str];
+        platform = 'local';
+      } else {
+        count += localSubsCount[str];
+      }
+    }
+
+    // Note: Real LC/GFG data is injected separately via renderHeatmapMerge after API calls;
+    // we do not add fake seed-based decoration here so it doesn't mask real data.
+
+    const level = count > 6 ? 4 : count > 4 ? 3 : count > 2 ? 2 : count > 0 ? 1 : 0;
+    let cls = '';
+    if (level > 0) {
+      if (platform === 'lc') cls = 'hm-lc hm-c' + level;
+      else if (platform === 'cf') cls = 'hm-cf hm-c' + level;
+      else if (platform === 'gfg') cls = 'hm-gfg hm-c' + level;
+      else cls = 'hm-c' + level;
+    }
+
+    const pname = platform === 'lc' ? 'LeetCode' : platform === 'cf' ? 'Codeforces' : platform === 'gfg' ? 'GFG' : 'CP Arena';
+    const tooltip = count > 0 ? `${count} on ${pname} (${str})` : `No activity (${str})`;
+    cells.push(`<div class="heatmap-cell ${cls}" data-info="${tooltip}"></div>`);
+  }
+
+  document.getElementById('heatmap-grid').innerHTML = cells.join('');
+}
+
+/* Merge additional platform data into existing heatmap cells */
+function renderHeatmapMerge(platform, dateCounts) {
+  const grid = document.getElementById('heatmap-grid');
+  const cells = grid.querySelectorAll('.heatmap-cell');
+  const COLOR = { lc: 'hm-lc', cf: 'hm-cf', gfg: 'hm-gfg' };
+  cells.forEach(cell => {
+    const info = cell.dataset.info || '';
+    // Extract date from tooltip like "N on Platform (2024-03-15)"
+    const m = info.match(/\((\d{4}-\d{2}-\d{2})\)/);
+    if (!m) return;
+    const dateStr = m[1];
+    if (!dateCounts[dateStr]) return;
+    const cnt = dateCounts[dateStr];
+    const level = cnt > 6 ? 4 : cnt > 4 ? 3 : cnt > 2 ? 2 : 1;
+    // Only upgrade empty cells
+    if (cell.className === 'heatmap-cell') {
+      cell.className = `heatmap-cell ${COLOR[platform]} hm-c${level}`;
+      cell.dataset.info = `${cnt} on ${platform === 'lc' ? 'LeetCode' : 'GFG'} (${dateStr})`;
+    }
+  });
+}
+
+/* ── HEATMAP TOOLTIP ── */
+(function initTooltip() {
+  const tip = document.getElementById('hm-tooltip');
+  const grid = document.getElementById('heatmap-grid');
+  const PAD = 12;
+
+  grid.addEventListener('mouseover', e => {
+    const cell = e.target.closest('.heatmap-cell');
+    if (!cell || !cell.dataset.info) return;
+    tip.textContent = cell.dataset.info;
+    tip.classList.add('visible');
+  });
+
+  grid.addEventListener('mousemove', e => {
+    const W = tip.offsetWidth;
+    const H = tip.offsetHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // Position above cursor, clamped inside viewport
+    let x = e.clientX - W / 2;
+    let y = e.clientY - H - PAD;
+    if (x < PAD) x = PAD;
+    if (x + W > vw - PAD) x = vw - W - PAD;
+    if (y < PAD) y = e.clientY + PAD; // flip below if too close to top
+    tip.style.left = x + 'px';
+    tip.style.top  = y + 'px';
+  });
+
+  grid.addEventListener('mouseleave', () => {
+    tip.classList.remove('visible');
+  });
+
+  grid.addEventListener('mouseout', e => {
+    if (!e.target.closest('.heatmap-cell')) tip.classList.remove('visible');
+  });
+})();
+
+function saveExternal(e) {
+  e.preventDefault();
+  const cfHandle  = document.getElementById('inp-cf').value.trim();
+  const lcHandle  = document.getElementById('inp-lc').value.trim();
+  const gfgHandle = document.getElementById('inp-gfg').value.trim();
+  Store.updateExternalHandles(profileUser.id, { cfHandle, lcHandle, gfgHandle });
+  profileUser.cfHandle  = cfHandle;
+  profileUser.lcHandle  = lcHandle;
+  profileUser.gfgHandle = gfgHandle;
+  renderHeatmapAndExternals();
+  const t = document.createElement('div');
+  t.className = 'toast success'; t.textContent = 'External handles saved!';
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(()=>t.remove(), 3000);
+}
+
+function uploadAvatar(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    showToastMsg('Image must be under 2 MB', 'error'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const b64 = ev.target.result;
+    Store.setAvatar(profileUser.id, b64);
+    // Update avatar div instantly
+    const avDiv = document.getElementById('avatar-div');
+    if (avDiv) {
+      avDiv.style.backgroundImage = `url('${b64}')`;
+      avDiv.style.backgroundSize  = 'cover';
+      avDiv.style.backgroundPosition = 'center';
+      // Hide the letter
+      avDiv.childNodes.forEach(n => { if (n.nodeType === 3) n.textContent = ''; });
+    }
+    showToastMsg('Profile picture updated!', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function showToastMsg(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type; t.textContent = msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+</script>
+</body>
+</html>
+
