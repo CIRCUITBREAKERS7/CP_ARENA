@@ -289,7 +289,7 @@ async function renderHeatmapAndExternals() {
     document.getElementById('inp-gfg').value = gfg;
   }
 
-  // Build badges — start with loading state for CF
+  // Build badges
   const disp = document.getElementById('ext-handles-disp');
   disp.innerHTML = [
     cf  ? `<div class="ext-badge has" id="badge-cf"><span style="color:#1f8bcb;font-weight:bold">CF</span> <a href="https://codeforces.com/profile/${cf}" target="_blank" style="color:var(--text-1);text-decoration:none">${cf}</a> <span id="cf-count" class="plat-count" style="color:var(--text-3);font-size:.7rem">…</span></div>` : '',
@@ -297,93 +297,128 @@ async function renderHeatmapAndExternals() {
     gfg ? `<div class="ext-badge has" id="badge-gfg"><span style="color:#2f8D46;font-weight:bold">GFG</span> <a href="https://auth.geeksforgeeks.org/user/${gfg}" target="_blank" style="color:var(--text-1);text-decoration:none">${gfg}</a> <span class="plat-count" style="color:var(--text-3);font-size:.7rem">…</span></div>` : '',
   ].filter(Boolean).join('');
 
-  // Render heatmap with local data first (instant)
-  renderHeatmap(cf, lc, gfg, {});
+  // Shared external date map: { 'YYYY-MM-DD': { count, platform } }
+  // All platform fetches update this, then call renderHeatmap with it.
+  const externalDates = {};
 
-  // Fetch real Codeforces data if handle exists
+  // Render initial heatmap (local data only)
+  renderHeatmap(externalDates);
+
+  // ── Codeforces ──────────────────────────────────────────────────────
   if (cf) {
-    try {
-      const res  = await fetch(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(cf)}&from=1&count=500`);
-      const data = await res.json();
-      if (data.status === 'OK') {
-        const accepted = data.result.filter(s => s.verdict === 'OK');
-        const distinct = new Set(accepted.map(s => `${s.problem.contestId}-${s.problem.index}`));
+    (async () => {
+      try {
+        const res  = await fetch(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(cf)}&from=1&count=500`);
+        const data = await res.json();
+        if (data.status === 'OK') {
+          const accepted = data.result.filter(s => s.verdict === 'OK');
+          const distinct = new Set(accepted.map(s => `${s.problem.contestId}-${s.problem.index}`));
+          const cfEl = document.getElementById('cf-count');
+          if (cfEl) cfEl.textContent = `· ${distinct.size} solved`;
 
-        // Count: problems solved
+          accepted.forEach(s => {
+            const d = new Date(s.creationTimeSeconds * 1000);
+            const str = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+            // CF wins if no data or it already owns the day
+            if (!externalDates[str] || externalDates[str].platform === 'cf') {
+              externalDates[str] = { count: (externalDates[str]?.count || 0) + 1, platform: 'cf' };
+            } else {
+              // Another platform already claimed this day — just add to count
+              externalDates[str].count += 1;
+            }
+          });
+          renderHeatmap(externalDates);
+        }
+      } catch(e) {
         const cfEl = document.getElementById('cf-count');
-        if (cfEl) cfEl.textContent = `· ${distinct.size} solved`;
-
-        // Build date map from CF submissions
-        const cfDates = {};
-        accepted.forEach(s => {
-          const d = new Date(s.creationTimeSeconds * 1000);
-          const str = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-          cfDates[str] = (cfDates[str] || 0) + 1;
-        });
-
-        // Re-render heatmap with real CF data
-        renderHeatmap(cf, lc, gfg, cfDates);
+        if (cfEl) cfEl.textContent = '· offline';
       }
-    } catch(e) {
-      const cfEl = document.getElementById('cf-count');
-      if (cfEl) cfEl.textContent = '· offline';
-    }
+    })();
   }
 
-  // Fetch real LeetCode data via alfa-leetcode-api
+  // ── LeetCode ────────────────────────────────────────────────────────
+  // Note: Render.com free tier cold-starts can take 30-60s — handled gracefully.
   if (lc) {
-    try {
-      const [profileRes, calRes] = await Promise.all([
-        fetch(`https://alfa-leetcode-api.onrender.com/${encodeURIComponent(lc)}/profile`),
-        fetch(`https://alfa-leetcode-api.onrender.com/${encodeURIComponent(lc)}/calendar`),
-      ]);
-      const profileData = await profileRes.json();
-      const calData     = await calRes.json();
-
-      // Show solved count on LC badge
+    (async () => {
       const lcEl = document.getElementById('lc-count');
-      if (lcEl && profileData.totalSolved != null) lcEl.textContent = `· ${profileData.totalSolved} solved`;
 
-      // Merge LC calendar into heatmap
-      // submissionCalendar can be a JSON string or already an object
-      let calObj = calData.submissionCalendar;
-      if (typeof calObj === 'string') {
-        try { calObj = JSON.parse(calObj); } catch { calObj = null; }
+      const fetchWithTimeout = (url, ms) => {
+        const ctrl = new AbortController();
+        const id = setTimeout(() => ctrl.abort(), ms);
+        return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(id));
+      };
+
+      const tryFetchLC = async () => {
+        const [profileRes, calRes] = await Promise.all([
+          fetchWithTimeout(`https://alfa-leetcode-api.onrender.com/${encodeURIComponent(lc)}/profile`, 60000),
+          fetchWithTimeout(`https://alfa-leetcode-api.onrender.com/${encodeURIComponent(lc)}/calendar`, 60000),
+        ]);
+        return { profileData: await profileRes.json(), calData: await calRes.json() };
+      };
+
+      if (lcEl) lcEl.textContent = '· loading…';
+
+      try {
+        let result;
+        try {
+          result = await tryFetchLC();
+        } catch (firstErr) {
+          console.warn('LC API first attempt failed, retrying…', firstErr.message);
+          if (lcEl) lcEl.textContent = '· retrying…';
+          result = await tryFetchLC();
+        }
+
+        const { profileData, calData } = result;
+        if (lcEl && profileData.totalSolved != null) lcEl.textContent = `· ${profileData.totalSolved} solved`;
+
+        // Parse submissionCalendar (may be a JSON string or already an object)
+        let calObj = calData.submissionCalendar;
+        if (typeof calObj === 'string') {
+          try { calObj = JSON.parse(calObj); } catch { calObj = null; }
+        }
+        if (calObj && typeof calObj === 'object') {
+          Object.entries(calObj).forEach(([ts, cnt]) => {
+            const d = new Date(parseInt(ts) * 1000);
+            const str = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+            // Only set LC if the day is empty; if CF owns it, blend count
+            if (!externalDates[str]) {
+              externalDates[str] = { count: cnt, platform: 'lc' };
+            } else {
+              externalDates[str].count += cnt; // add LC count but keep existing platform color
+            }
+          });
+          renderHeatmap(externalDates);
+        }
+      } catch(e) {
+        console.warn('LC API unavailable after retry:', e.message);
+        if (lcEl) lcEl.textContent = '· unavailable';
       }
-      if (calObj && typeof calObj === 'object') {
-        const lcDates = {};
-        Object.entries(calObj).forEach(([ts, cnt]) => {
-          const d = new Date(parseInt(ts) * 1000);
-          const str = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-          lcDates[str] = cnt;
-        });
-        renderHeatmapMerge('lc', lcDates);
-      }
-    } catch(e) {
-      console.log('LC API unavailable:', e.message);
-      const lcEl = document.getElementById('lc-count');
-      if (lcEl) lcEl.textContent = '· offline';
-    }
+    })();
   }
 
-  // Fetch real GFG data via public stats API
+  // ── GeeksForGeeks ───────────────────────────────────────────────────
   if (gfg) {
-    try {
-      const res  = await fetch(`https://geeks-for-geeks-stats-api-neeraj.vercel.app/?userName=${encodeURIComponent(gfg)}`);
-      const data = await res.json();
-      const gfgEl = document.querySelector('#badge-gfg .plat-count');
-      if (gfgEl && data.totalProblemsSolved) gfgEl.textContent = `· ${data.totalProblemsSolved} solved`;
-    } catch(e) {
-      console.log('GFG API unavailable:', e.message);
-    }
+    (async () => {
+      try {
+        const res  = await fetch(`https://geeks-for-geeks-stats-api-neeraj.vercel.app/?userName=${encodeURIComponent(gfg)}`);
+        const data = await res.json();
+        const gfgEl = document.querySelector('#badge-gfg .plat-count');
+        if (gfgEl && data.totalProblemsSolved) gfgEl.textContent = `· ${data.totalProblemsSolved} solved`;
+      } catch(e) {
+        console.log('GFG API unavailable:', e.message);
+      }
+    })();
   }
 }
 
-function renderHeatmap(cf, lc, gfg, cfRealDates) {
+/* Unified heatmap renderer — takes a shared externalDates map:
+   { 'YYYY-MM-DD': { count: N, platform: 'cf'|'lc'|'gfg' } }
+   All platforms update this map and call renderHeatmap; no more race conditions. */
+function renderHeatmap(externalDates) {
   const today = new Date();
   today.setHours(0,0,0,0);
 
-  // Get local submission dates
+  // Local CP Arena submission dates
   const localSubsCount = {};
   const subs = Store.getSubmissionsByUser(profileUser.id);
   subs.forEach(s => {
@@ -391,11 +426,6 @@ function renderHeatmap(cf, lc, gfg, cfRealDates) {
     const str = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     localSubsCount[str] = (localSubsCount[str] || 0) + 1;
   });
-
-  // Seed-based consistent random for LC/GFG decoration
-  let seed = 0;
-  for(let i=0;i<profileUser.username.length;i++) seed += profileUser.username.charCodeAt(i);
-  const rng = () => { let x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
 
   const cells = [];
   for (let i = 364; i >= 0; i--) {
@@ -406,32 +436,25 @@ function renderHeatmap(cf, lc, gfg, cfRealDates) {
     let count = 0;
     let platform = 'local';
 
-    // Real CF data takes priority
-    if (cfRealDates[str]) {
-      count = cfRealDates[str];
-      platform = 'cf';
+    // External platform data (CF / LC / GFG)
+    if (externalDates[str]) {
+      count    = externalDates[str].count;
+      platform = externalDates[str].platform;
     }
 
-    // Overlay local platform submissions
+    // Overlay local CP Arena submissions
     if (localSubsCount[str]) {
-      if (count === 0) {
-        count = localSubsCount[str];
-        platform = 'local';
-      } else {
-        count += localSubsCount[str];
-      }
+      if (count === 0) { count = localSubsCount[str]; platform = 'local'; }
+      else             { count += localSubsCount[str]; }
     }
-
-    // Note: Real LC/GFG data is injected separately via renderHeatmapMerge after API calls;
-    // we do not add fake seed-based decoration here so it doesn't mask real data.
 
     const level = count > 6 ? 4 : count > 4 ? 3 : count > 2 ? 2 : count > 0 ? 1 : 0;
     let cls = '';
     if (level > 0) {
-      if (platform === 'lc') cls = 'hm-lc hm-c' + level;
-      else if (platform === 'cf') cls = 'hm-cf hm-c' + level;
+      if      (platform === 'lc')  cls = 'hm-lc hm-c'  + level;
+      else if (platform === 'cf')  cls = 'hm-cf hm-c'  + level;
       else if (platform === 'gfg') cls = 'hm-gfg hm-c' + level;
-      else cls = 'hm-c' + level;
+      else                         cls = 'hm-c'         + level;
     }
 
     const pname = platform === 'lc' ? 'LeetCode' : platform === 'cf' ? 'Codeforces' : platform === 'gfg' ? 'GFG' : 'CP Arena';
@@ -440,28 +463,6 @@ function renderHeatmap(cf, lc, gfg, cfRealDates) {
   }
 
   document.getElementById('heatmap-grid').innerHTML = cells.join('');
-}
-
-/* Merge additional platform data into existing heatmap cells */
-function renderHeatmapMerge(platform, dateCounts) {
-  const grid = document.getElementById('heatmap-grid');
-  const cells = grid.querySelectorAll('.heatmap-cell');
-  const COLOR = { lc: 'hm-lc', cf: 'hm-cf', gfg: 'hm-gfg' };
-  cells.forEach(cell => {
-    const info = cell.dataset.info || '';
-    // Extract date from tooltip like "N on Platform (2024-03-15)"
-    const m = info.match(/\((\d{4}-\d{2}-\d{2})\)/);
-    if (!m) return;
-    const dateStr = m[1];
-    if (!dateCounts[dateStr]) return;
-    const cnt = dateCounts[dateStr];
-    const level = cnt > 6 ? 4 : cnt > 4 ? 3 : cnt > 2 ? 2 : 1;
-    // Only upgrade empty cells
-    if (cell.className === 'heatmap-cell') {
-      cell.className = `heatmap-cell ${COLOR[platform]} hm-c${level}`;
-      cell.dataset.info = `${cnt} on ${platform === 'lc' ? 'LeetCode' : 'GFG'} (${dateStr})`;
-    }
-  });
 }
 
 /* ── HEATMAP TOOLTIP ── */
