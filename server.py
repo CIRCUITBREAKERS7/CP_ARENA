@@ -14,3 +14,4 @@ with socketserver.TCPServer(('', PORT), NoCacheHandler) as httpd:
     httpd.serve_forever()
 
 print("rohit")
+print(3+7, 3%2, 3**2, 3//2, 3**0.5, 3**0.5, 3**0.5)
