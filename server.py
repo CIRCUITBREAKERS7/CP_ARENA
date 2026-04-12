@@ -13,4 +13,5 @@ with socketserver.TCPServer(('', PORT), NoCacheHandler) as httpd:
     print(f'Serving on http://localhost:{PORT} (cache disabled)')
     httpd.serve_forever()
 
-print("hello world")
+print("rohit")
+print(3+7, 3%2, 3**2, 3//2, 3**0.5, 3**0.5, 3**0.5)
