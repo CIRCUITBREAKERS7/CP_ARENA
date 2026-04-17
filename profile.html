@@ -54,6 +54,50 @@
     .sub-table tbody tr{border-bottom:1px solid var(--border-muted);transition:background var(--transition-fast)}
     .sub-table tbody tr:hover{background:var(--bg-elevated)}.sub-table tbody td{padding:9px 14px;vertical-align:middle}
     .vb-ac{color:var(--accepted)}.vb-wa{color:var(--wrong)}.vb-ce{color:var(--ce)}.vb-re{color:var(--tle)}.vb-p{color:var(--pending)}
+    /* ── All Platforms ── */
+    .plat-section{margin-bottom:32px}
+    .plat-cards-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
+    .plat-summary-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 18px;backdrop-filter:blur(12px);text-align:center;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+    .plat-summary-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.25)}
+    .plat-summary-card::before{content:'';position:absolute;inset:0;opacity:.07;pointer-events:none}
+    .plat-card-cp::before{background:linear-gradient(135deg,var(--green),var(--blue))}
+    .plat-card-lc::before{background:linear-gradient(135deg,#ffa116,#ff6b00)}
+    .plat-card-cf::before{background:linear-gradient(135deg,#1f8bcb,#0d5fa3)}
+    .plat-card-gfg::before{background:linear-gradient(135deg,#2f8d46,#1a5c2c)}
+    .plat-card-icon{font-size:1.6rem;margin-bottom:8px;display:block}
+    .plat-card-name{font-family:var(--font-mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:6px}
+    .plat-card-count{font-family:var(--font-mono);font-size:2rem;font-weight:900;line-height:1}
+    .plat-card-count.cp-col{color:var(--green)}
+    .plat-card-count.lc-col{color:#ffa116}
+    .plat-card-count.cf-col{color:#1f8bcb}
+    .plat-card-count.gfg-col{color:#2f8d46}
+    .plat-card-label{font-family:var(--font-mono);font-size:.7rem;color:var(--text-3);margin-top:2px}
+    .plat-card-status{font-family:var(--font-mono);font-size:.65rem;color:var(--text-3);position:absolute;bottom:8px;right:10px}
+    /* Platform problem list */
+    .plat-prob-section{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;backdrop-filter:blur(12px);margin-bottom:16px}
+    .plat-prob-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+    .plat-prob-logo{font-family:var(--font-mono);font-size:.8rem;font-weight:800;padding:3px 10px;border-radius:50px}
+    .plat-prob-logo.lc-logo{background:rgba(255,161,22,.15);color:#ffa116;border:1px solid rgba(255,161,22,.3)}
+    .plat-prob-logo.cf-logo{background:rgba(31,139,203,.15);color:#1f8bcb;border:1px solid rgba(31,139,203,.3)}
+    .plat-prob-logo.gfg-logo{background:rgba(47,141,70,.15);color:#2f8d46;border:1px solid rgba(47,141,70,.3)}
+    .plat-prob-logo.cp-logo{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.25)}
+    .plat-prob-title{font-family:var(--font-mono);font-size:1rem;font-weight:700;color:var(--text-1);flex:1}
+    .plat-prob-count-badge{font-family:var(--font-mono);font-size:.75rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:50px;padding:2px 10px;color:var(--text-2)}
+    .plat-prob-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:7px;max-height:300px;overflow-y:auto;padding-right:4px}
+    .plat-prob-grid::-webkit-scrollbar{width:4px}
+    .plat-prob-grid::-webkit-scrollbar-track{background:transparent}
+    .plat-prob-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+    .plat-prob-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-elevated);border:1px solid var(--border-muted);border-radius:var(--radius);text-decoration:none;transition:all .15s;font-size:.82rem;color:var(--text-1);font-weight:500}
+    .plat-prob-item:hover{background:var(--bg-card-hover);border-color:var(--border)}
+    .plat-prob-item .pp-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .pp-dot-lc{background:#ffa116}
+    .pp-dot-cf{background:#1f8bcb}
+    .pp-dot-gfg{background:#2f8d46}
+    .pp-dot-cp{background:var(--green)}
+    .plat-loading{display:flex;align-items:center;gap:8px;color:var(--text-3);font-family:var(--font-mono);font-size:.8rem;padding:12px 0}
+    .plat-spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .plat-nohandle{color:var(--text-3);font-family:var(--font-mono);font-size:.8rem;padding:12px 0;font-style:italic}
     /* Empty */
     /* Heatmap */
     .heatmap-container{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:28px;backdrop-filter:blur(12px);overflow-x:auto}
@@ -139,9 +183,11 @@
   <!-- Tabs -->
   <div class="tabs profile-tabs" id="prof-tabs">
     <button class="tab-btn active" id="tab-solved" onclick="showTab('solved')">Solved Problems</button>
+    <button class="tab-btn" id="tab-platforms" onclick="showTab('platforms')">All Platforms</button>
     <button class="tab-btn" id="tab-subs" onclick="showTab('subs')">Submissions</button>
   </div>
   <div id="tab-content-solved"></div>
+  <div id="tab-content-platforms" style="display:none"></div>
   <div id="tab-content-subs" style="display:none"></div>
 </div>
 
@@ -268,7 +314,7 @@ function renderSubsTab(stats){
 }
 
 function showTab(name){
-  ['solved','subs'].forEach(t=>{
+  ['solved','platforms','subs'].forEach(t=>{
     document.getElementById('tab-'+t).classList.toggle('active',t===name);
     document.getElementById('tab-content-'+t).style.display=t===name?'':'none';
   });
@@ -297,12 +343,15 @@ async function renderHeatmapAndExternals() {
     gfg ? `<div class="ext-badge has" id="badge-gfg"><span style="color:#2f8D46;font-weight:bold">GFG</span> <a href="https://auth.geeksforgeeks.org/user/${gfg}" target="_blank" style="color:var(--text-1);text-decoration:none">${gfg}</a> <span class="plat-count" style="color:var(--text-3);font-size:.7rem">…</span></div>` : '',
   ].filter(Boolean).join('');
 
-  // Shared external date map: { 'YYYY-MM-DD': { count, platform } }
-  // All platform fetches update this, then call renderHeatmap with it.
-  const externalDates = {};
+  // Render initial All Platforms tab wih CP Arena data only
+  renderAllPlatformsTab({ cfData: null, lcData: null, gfgData: null });
 
-  // Render initial heatmap (local data only)
+  // Shared external date map: { 'YYYY-MM-DD': { count, platform } }
+  const externalDates = {};
   renderHeatmap(externalDates);
+
+  // Shared accumulator for cross-platform tab
+  const platAccum = { cfData: null, lcData: null, gfgData: null };
 
   // ── Codeforces ──────────────────────────────────────────────────────
   if (cf) {
@@ -312,18 +361,24 @@ async function renderHeatmapAndExternals() {
         const data = await res.json();
         if (data.status === 'OK') {
           const accepted = data.result.filter(s => s.verdict === 'OK');
-          const distinct = new Set(accepted.map(s => `${s.problem.contestId}-${s.problem.index}`));
+          const distinctMap = {};
+          accepted.forEach(s => {
+            const key = `${s.problem.contestId}-${s.problem.index}`;
+            if (!distinctMap[key]) distinctMap[key] = s.problem;
+          });
+          const distinctProblems = Object.values(distinctMap);
           const cfEl = document.getElementById('cf-count');
-          if (cfEl) cfEl.textContent = `· ${distinct.size} solved`;
+          if (cfEl) cfEl.textContent = `· ${distinctProblems.length} solved`;
+
+          platAccum.cfData = { count: distinctProblems.length, problems: distinctProblems, handle: cf };
+          renderAllPlatformsTab(platAccum);
 
           accepted.forEach(s => {
             const d = new Date(s.creationTimeSeconds * 1000);
             const str = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-            // CF wins if no data or it already owns the day
             if (!externalDates[str] || externalDates[str].platform === 'cf') {
               externalDates[str] = { count: (externalDates[str]?.count || 0) + 1, platform: 'cf' };
             } else {
-              // Another platform already claimed this day — just add to count
               externalDates[str].count += 1;
             }
           });
@@ -332,12 +387,13 @@ async function renderHeatmapAndExternals() {
       } catch(e) {
         const cfEl = document.getElementById('cf-count');
         if (cfEl) cfEl.textContent = '· offline';
+        platAccum.cfData = { count: 0, problems: [], handle: cf, error: true };
+        renderAllPlatformsTab(platAccum);
       }
     })();
   }
 
   // ── LeetCode ────────────────────────────────────────────────────────
-  // Note: Render.com free tier cold-starts can take 30-60s — handled gracefully.
   if (lc) {
     (async () => {
       const lcEl = document.getElementById('lc-count');
@@ -349,11 +405,16 @@ async function renderHeatmapAndExternals() {
       };
 
       const tryFetchLC = async () => {
-        const [profileRes, calRes] = await Promise.all([
+        const [profileRes, calRes, recentRes] = await Promise.all([
           fetchWithTimeout(`https://alfa-leetcode-api.onrender.com/${encodeURIComponent(lc)}/profile`, 60000),
           fetchWithTimeout(`https://alfa-leetcode-api.onrender.com/${encodeURIComponent(lc)}/calendar`, 60000),
+          fetchWithTimeout(`https://alfa-leetcode-api.onrender.com/${encodeURIComponent(lc)}/acSubmission`, 60000),
         ]);
-        return { profileData: await profileRes.json(), calData: await calRes.json() };
+        return {
+          profileData: await profileRes.json(),
+          calData: await calRes.json(),
+          recentData: await recentRes.json(),
+        };
       };
 
       if (lcEl) lcEl.textContent = '· loading…';
@@ -368,30 +429,41 @@ async function renderHeatmapAndExternals() {
           result = await tryFetchLC();
         }
 
-        const { profileData, calData } = result;
-        if (lcEl && profileData.totalSolved != null) lcEl.textContent = `· ${profileData.totalSolved} solved`;
+        const { profileData, calData, recentData } = result;
+        const lcSolved = profileData.totalSolved ?? 0;
+        if (lcEl && profileData.totalSolved != null) lcEl.textContent = `· ${lcSolved} solved`;
 
-        // Parse submissionCalendar (may be a JSON string or already an object)
+        // Collect recent accepted submissions for the problems list
+        const lcProblems = [];
+        const seenLC = new Set();
+        const acList = recentData.submission || recentData.acSubmissionList || [];
+        acList.forEach(s => {
+          if (!seenLC.has(s.titleSlug)) {
+            seenLC.add(s.titleSlug);
+            lcProblems.push({ title: s.title, titleSlug: s.titleSlug, difficulty: s.difficulty || '' });
+          }
+        });
+
+        platAccum.lcData = { count: lcSolved, problems: lcProblems, handle: lc };
+        renderAllPlatformsTab(platAccum);
+
+        // Parse submissionCalendar
         let calObj = calData.submissionCalendar;
-        if (typeof calObj === 'string') {
-          try { calObj = JSON.parse(calObj); } catch { calObj = null; }
-        }
+        if (typeof calObj === 'string') { try { calObj = JSON.parse(calObj); } catch { calObj = null; } }
         if (calObj && typeof calObj === 'object') {
           Object.entries(calObj).forEach(([ts, cnt]) => {
             const d = new Date(parseInt(ts) * 1000);
             const str = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-            // Only set LC if the day is empty; if CF owns it, blend count
-            if (!externalDates[str]) {
-              externalDates[str] = { count: cnt, platform: 'lc' };
-            } else {
-              externalDates[str].count += cnt; // add LC count but keep existing platform color
-            }
+            if (!externalDates[str]) { externalDates[str] = { count: cnt, platform: 'lc' }; }
+            else { externalDates[str].count += cnt; }
           });
           renderHeatmap(externalDates);
         }
       } catch(e) {
         console.warn('LC API unavailable after retry:', e.message);
         if (lcEl) lcEl.textContent = '· unavailable';
+        platAccum.lcData = { count: 0, problems: [], handle: lc, error: true };
+        renderAllPlatformsTab(platAccum);
       }
     })();
   }
@@ -403,12 +475,208 @@ async function renderHeatmapAndExternals() {
         const res  = await fetch(`https://geeks-for-geeks-stats-api-neeraj.vercel.app/?userName=${encodeURIComponent(gfg)}`);
         const data = await res.json();
         const gfgEl = document.querySelector('#badge-gfg .plat-count');
-        if (gfgEl && data.totalProblemsSolved) gfgEl.textContent = `· ${data.totalProblemsSolved} solved`;
+        const gfgSolved = data.totalProblemsSolved || 0;
+        if (gfgEl && gfgSolved) gfgEl.textContent = `· ${gfgSolved} solved`;
+
+        // GFG API typically includes problemsSolveds with categories; try to extract names
+        const gfgProblems = [];
+        if (data.problemsSolvedList && Array.isArray(data.problemsSolvedList)) {
+          data.problemsSolvedList.forEach(p => gfgProblems.push({ title: p }));
+        } else if (data.School || data.Easy || data.Medium || data.Hard) {
+          ['School','Basic','Easy','Medium','Hard'].forEach(level => {
+            if (Array.isArray(data[level])) data[level].forEach(name => gfgProblems.push({ title: name, difficulty: level }));
+          });
+        }
+        platAccum.gfgData = { count: parseInt(gfgSolved) || gfgProblems.length, problems: gfgProblems, handle: gfg };
+        renderAllPlatformsTab(platAccum);
       } catch(e) {
         console.log('GFG API unavailable:', e.message);
+        platAccum.gfgData = { count: 0, problems: [], handle: gfg, error: true };
+        renderAllPlatformsTab(platAccum);
       }
     })();
   }
+}
+
+/* ── ALL PLATFORMS TAB ── */
+function renderAllPlatformsTab(platAccum) {
+  const el = document.getElementById('tab-content-platforms');
+  const stats = Store.getUserStats(profileUser.id);
+  const cf  = profileUser.cfHandle  || '';
+  const lc  = profileUser.lcHandle  || '';
+  const gfg = profileUser.gfgHandle || '';
+
+  const lcCount  = platAccum.lcData?.count  ?? null;
+  const cfCount  = platAccum.cfData?.count  ?? null;
+  const gfgCount = platAccum.gfgData?.count ?? null;
+
+  const totalExternal = (lcCount||0) + (cfCount||0) + (gfgCount||0);
+  const grandTotal    = stats.totalSolved + totalExternal;
+
+  const loadingSpinner = `<div class="plat-loading"><div class="plat-spinner"></div><span>Fetching…</span></div>`;
+  const offlineBadge   = `<span style="color:var(--hard);font-size:.75rem;font-family:var(--font-mono)">⚡ Unavailable</span>`;
+
+  // Summary cards
+  const cards = `
+    <div class="plat-cards-row">
+      <div class="plat-summary-card plat-card-cp">
+        <span class="plat-card-icon">⚡</span>
+        <div class="plat-card-name">CP Arena</div>
+        <div class="plat-card-count cp-col">${stats.totalSolved}</div>
+        <div class="plat-card-label">solved</div>
+      </div>
+      ${lc ? `
+      <div class="plat-summary-card plat-card-lc">
+        <span class="plat-card-icon">🟡</span>
+        <div class="plat-card-name">LeetCode</div>
+        <div class="plat-card-count lc-col">${lcCount !== null ? lcCount : '…'}</div>
+        <div class="plat-card-label">solved</div>
+        ${lcCount === null ? `<div class="plat-card-status">loading</div>` : ''}
+        ${platAccum.lcData?.error ? `<div class="plat-card-status">offline</div>` : ''}
+      </div>` : ''}
+      ${cf ? `
+      <div class="plat-summary-card plat-card-cf">
+        <span class="plat-card-icon">🔵</span>
+        <div class="plat-card-name">Codeforces</div>
+        <div class="plat-card-count cf-col">${cfCount !== null ? cfCount : '…'}</div>
+        <div class="plat-card-label">solved</div>
+        ${cfCount === null ? `<div class="plat-card-status">loading</div>` : ''}
+        ${platAccum.cfData?.error ? `<div class="plat-card-status">offline</div>` : ''}
+      </div>` : ''}
+      ${gfg ? `
+      <div class="plat-summary-card plat-card-gfg">
+        <span class="plat-card-icon">🟢</span>
+        <div class="plat-card-name">GeeksforGeeks</div>
+        <div class="plat-card-count gfg-col">${gfgCount !== null ? gfgCount : '…'}</div>
+        <div class="plat-card-label">solved</div>
+        ${gfgCount === null ? `<div class="plat-card-status">loading</div>` : ''}
+        ${platAccum.gfgData?.error ? `<div class="plat-card-status">offline</div>` : ''}
+      </div>` : ''}
+    </div>
+    ${(lc || cf || gfg) ? `
+    <div style="font-family:var(--font-mono);font-size:.78rem;color:var(--text-3);margin-bottom:20px;padding:12px 16px;background:var(--bg-elevated);border-radius:var(--radius);border:1px solid var(--border-muted)">
+      🏆 Grand Total: <span style="color:var(--green);font-weight:800;font-size:1rem">${grandTotal}</span> problems solved across all platforms
+    </div>` : ''}`;
+
+  // CP Arena solved list
+  const cpBlock = `
+    <div class="plat-prob-section">
+      <div class="plat-prob-header">
+        <span class="plat-prob-logo cp-logo">CP Arena</span>
+        <span class="plat-prob-title">Problems Solved on CP Arena</span>
+        <span class="plat-prob-count-badge">${stats.totalSolved} solved</span>
+      </div>
+      ${stats.solvedProblems.length === 0 ?
+        `<div class="plat-nohandle">No problems solved yet. <a href="problems.html" style="color:var(--green)">Start solving!</a></div>` :
+        `<div class="plat-prob-grid">
+          ${stats.solvedProblems.sort((a,b)=>a.number-b.number).map(p=>`
+            <a class="plat-prob-item" href="problem.html?id=${p.id}" target="_blank">
+              <span class="pp-dot pp-dot-cp"></span>
+              <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.title)}</span>
+              <span class="badge badge-${p.difficulty.toLowerCase()}" style="flex-shrink:0;font-size:.65rem">${p.difficulty}</span>
+            </a>`).join('')}
+        </div>`
+      }
+    </div>`;
+
+  // LeetCode block
+  let lcBlock = '';
+  if (lc) {
+    if (!platAccum.lcData) {
+      lcBlock = `<div class="plat-prob-section"><div class="plat-prob-header"><span class="plat-prob-logo lc-logo">LeetCode</span><span class="plat-prob-title">LeetCode — ${lc}</span></div>${loadingSpinner}</div>`;
+    } else if (platAccum.lcData.error) {
+      lcBlock = `<div class="plat-prob-section"><div class="plat-prob-header"><span class="plat-prob-logo lc-logo">LeetCode</span><span class="plat-prob-title">LeetCode — ${lc}</span><span class="plat-prob-count-badge">${platAccum.lcData.count} solved</span></div>${offlineBadge}<span style="color:var(--text-3);font-size:.8rem;font-family:var(--font-mono);margin-left:8px">API temporarily unavailable. <a href="https://leetcode.com/${lc}" target="_blank" style="color:#ffa116">View on LeetCode ↗</a></span></div>`;
+    } else {
+      const probs = platAccum.lcData.problems;
+      lcBlock = `<div class="plat-prob-section">
+        <div class="plat-prob-header">
+          <span class="plat-prob-logo lc-logo">LeetCode</span>
+          <span class="plat-prob-title">LeetCode — <a href="https://leetcode.com/${lc}" target="_blank" style="color:#ffa116;text-decoration:none">${lc} ↗</a></span>
+          <span class="plat-prob-count-badge">${platAccum.lcData.count} solved</span>
+        </div>
+        ${probs.length === 0
+          ? `<div class="plat-nohandle">Total: ${platAccum.lcData.count} solved. Recent accepted list not available from API. <a href="https://leetcode.com/${lc}" target="_blank" style="color:#ffa116">View profile ↗</a></div>`
+          : `<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--text-3);margin-bottom:10px">Showing ${probs.length} recent accepted submissions</div>
+             <div class="plat-prob-grid">
+               ${probs.map(p=>`<a class="plat-prob-item" href="https://leetcode.com/problems/${p.titleSlug}/" target="_blank">
+                 <span class="pp-dot pp-dot-lc"></span>
+                 <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.title)}</span>
+                 ${p.difficulty ? `<span style="font-size:.65rem;color:${p.difficulty==='Easy'?'var(--easy)':p.difficulty==='Hard'?'var(--hard)':'var(--medium)'}">${p.difficulty}</span>` : ''}
+               </a>`).join('')}
+             </div>`
+        }
+      </div>`;
+    }
+  }
+
+  // Codeforces block
+  let cfBlock = '';
+  if (cf) {
+    if (!platAccum.cfData) {
+      cfBlock = `<div class="plat-prob-section"><div class="plat-prob-header"><span class="plat-prob-logo cf-logo">Codeforces</span><span class="plat-prob-title">Codeforces — ${cf}</span></div>${loadingSpinner}</div>`;
+    } else if (platAccum.cfData.error) {
+      cfBlock = `<div class="plat-prob-section"><div class="plat-prob-header"><span class="plat-prob-logo cf-logo">Codeforces</span><span class="plat-prob-title">Codeforces — ${cf}</span></div>${offlineBadge}<span style="color:var(--text-3);font-size:.8rem;font-family:var(--font-mono);margin-left:8px">API temporarily unavailable.</span></div>`;
+    } else {
+      const probs = platAccum.cfData.problems.slice(0, 100);
+      cfBlock = `<div class="plat-prob-section">
+        <div class="plat-prob-header">
+          <span class="plat-prob-logo cf-logo">Codeforces</span>
+          <span class="plat-prob-title">Codeforces — <a href="https://codeforces.com/profile/${cf}" target="_blank" style="color:#1f8bcb;text-decoration:none">${cf} ↗</a></span>
+          <span class="plat-prob-count-badge">${platAccum.cfData.count} solved</span>
+        </div>
+        ${probs.length === 0
+          ? `<div class="plat-nohandle">No accepted submissions found in last 500.</div>`
+          : `<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--text-3);margin-bottom:10px">Showing ${probs.length} of ${platAccum.cfData.count} distinct solved problems (from last 500 submissions)</div>
+             <div class="plat-prob-grid">
+               ${probs.map(p=>`<a class="plat-prob-item" href="https://codeforces.com/problemset/problem/${p.contestId}/${p.index}" target="_blank">
+                 <span class="pp-dot pp-dot-cf"></span>
+                 <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span>
+                 <span style="font-size:.65rem;color:var(--text-3)">${p.contestId}${p.index}</span>
+               </a>`).join('')}
+             </div>`
+        }
+      </div>`;
+    }
+  }
+
+  // GFG block
+  let gfgBlock = '';
+  if (gfg) {
+    if (!platAccum.gfgData) {
+      gfgBlock = `<div class="plat-prob-section"><div class="plat-prob-header"><span class="plat-prob-logo gfg-logo">GFG</span><span class="plat-prob-title">GeeksforGeeks — ${gfg}</span></div>${loadingSpinner}</div>`;
+    } else {
+      const probs = platAccum.gfgData.problems;
+      gfgBlock = `<div class="plat-prob-section">
+        <div class="plat-prob-header">
+          <span class="plat-prob-logo gfg-logo">GFG</span>
+          <span class="plat-prob-title">GeeksforGeeks — <a href="https://auth.geeksforgeeks.org/user/${gfg}" target="_blank" style="color:#2f8d46;text-decoration:none">${gfg} ↗</a></span>
+          <span class="plat-prob-count-badge">${platAccum.gfgData.count} solved</span>
+        </div>
+        ${platAccum.gfgData.error
+          ? `${offlineBadge}<span style="color:var(--text-3);font-size:.8rem;font-family:var(--font-mono);margin-left:8px">API temporarily unavailable.</span>`
+          : probs.length === 0
+            ? `<div class="plat-nohandle">Total: ${platAccum.gfgData.count} solved. Problem names not available from API. <a href="https://auth.geeksforgeeks.org/user/${gfg}" target="_blank" style="color:#2f8d46">View profile ↗</a></div>`
+            : `<div class="plat-prob-grid">
+                ${probs.map(p=>`<div class="plat-prob-item" style="cursor:default">
+                  <span class="pp-dot pp-dot-gfg"></span>
+                  <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.title)}</span>
+                  ${p.difficulty ? `<span style="font-size:.65rem;color:var(--text-3)">${p.difficulty}</span>` : ''}
+                </div>`).join('')}
+               </div>`
+        }
+      </div>`;
+    }
+  }
+
+  // No external handles prompt
+  const noHandlesNote = (!lc && !cf && !gfg) ? `
+    <div style="text-align:center;padding:32px;font-family:var(--font-mono);color:var(--text-3);border:1.5px dashed var(--border);border-radius:var(--radius-lg);margin-bottom:24px">
+      <div style="font-size:2rem;margin-bottom:12px">🔗</div>
+      <div style="font-size:.9rem;margin-bottom:6px;color:var(--text-2)">No external handles linked</div>
+      <div style="font-size:.8rem">Link your LeetCode, Codeforces & GFG handles above to see problems solved across all platforms.</div>
+    </div>` : '';
+
+  el.innerHTML = `<div class="plat-section">${cards}${noHandlesNote}${cpBlock}${lcBlock}${cfBlock}${gfgBlock}</div>`;
 }
 
 /* Unified heatmap renderer — takes a shared externalDates map:
