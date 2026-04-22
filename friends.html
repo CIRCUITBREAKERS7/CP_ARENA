@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Friends — CP Arena</title>
+  <meta name="description" content="Search your friends and compare problem-solving stats across CP Arena, LeetCode, Codeforces and GeeksforGeeks."/>
+  <link rel="stylesheet" href="css/theme.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <style>
+    /* ── Page layout ── */
+    .friends-wrap { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
+
+    /* ── Search bar ── */
+    .search-bar-wrap {
+      display: flex; gap: 10px; margin-bottom: 28px;
+    }
+    .search-bar-wrap .form-input {
+      flex: 1; font-size: 1rem; padding: 12px 18px;
+    }
+    #search-results-list {
+      margin-bottom: 32px;
+    }
+
+    /* ── User result row ── */
+    .user-result-row {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 14px 18px;
+      margin-bottom: 10px; cursor: pointer;
+      transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+    }
+    .user-result-row:hover {
+      border-color: var(--border-hover); box-shadow: var(--glow-green); transform: translateY(-1px);
+    }
+    .user-result-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono); font-weight: 800; font-size: 1.2rem;
+      color: var(--bg-base); flex-shrink: 0;
+    }
+    .user-result-info { flex: 1; }
+    .user-result-name { font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--text-1); }
+    .user-result-sub  { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-3); margin-top: 2px; }
+    .user-result-row .btn { flex-shrink: 0; }
+    .user-result-row .pinned-label {
+      font-family: var(--font-mono); font-size: 0.72rem;
+      color: var(--green); border: 1px solid rgba(0,255,136,.3);
+      border-radius: 50px; padding: 3px 10px; flex-shrink: 0;
+    }
+    .no-results {
+      font-family: var(--font-mono); font-size: 0.88rem;
+      color: var(--text-3); padding: 20px 0; text-align: center;
+    }
+
+    /* ── Section heading ── */
+    .section-heading {
+      font-family: var(--font-mono); font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-3); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-heading::after {
+      content: ''; flex: 1; height: 1px; background: var(--border-muted);
+    }
+
+    /* ── Friend card ── */
+    .friends-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 18px; margin-bottom: 40px;
+    }
+    .friend-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); backdrop-filter: blur(16px);
+      overflow: hidden; transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+      position: relative;
+    }
+    .friend-card:hover { border-color: var(--border-hover); box-shadow: var(--glow-green); transform: translateY(-2px); }
+
+    .friend-card-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 18px 12px;
+      background: linear-gradient(135deg, rgba(0,255,136,.04) 0%, rgba(0,180,255,.04) 100%);
+      border-bottom: 1px solid var(--border-muted);
+    }
+    .friend-avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono); font-weight: 800; font-size: 1.3rem;
+      color: var(--bg-base); flex-shrink: 0;
+    }
+    .friend-name { font-family: var(--font-mono); font-weight: 800; font-size: 1rem; color: var(--text-1); }
+    .friend-joined { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-3); margin-top: 2px; }
+    .friend-remove-btn {
+      margin-left: auto; background: none; border: none; cursor: pointer;
+      color: var(--text-3); font-size: 1rem; padding: 4px 6px;
+      border-radius: var(--radius); transition: color var(--transition-fast), background var(--transition-fast);
+    }
+    .friend-remove-btn:hover { color: var(--hard); background: var(--red-dim); }
+
+    /* Platform stats inside card */
+    .friend-platforms { padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; }
+    .plat-row {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--font-mono); font-size: 0.8rem;
+    }
+    .plat-icon { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; flex-shrink: 0; }
+    .pi-cp  { background: rgba(0,255,136,.15); color: var(--green); }
+    .pi-lc  { background: rgba(255,161,22,.15); color: #ffa116; }
+    .pi-cf  { background: rgba(31,139,203,.15); color: #1f8bcb; }
+    .pi-gfg { background: rgba(47,141,70,.15);  color: #2f8d46; }
+    .plat-label { color: var(--text-2); width: 90px; flex-shrink: 0; }
+    .plat-count-val { font-weight: 800; font-size: 0.92rem; }
+    .pc-cp  { color: var(--green); }
+    .pc-lc  { color: #ffa116; }
+    .pc-cf  { color: #1f8bcb; }
+    .pc-gfg { color: #2f8d46; }
+    .plat-bar-bg { flex: 1; height: 4px; background: var(--bg-base); border-radius: 2px; overflow: hidden; }
+    .plat-bar-fill { height: 100%; border-radius: 2px; transition: width .8s ease; }
+    .pb-cp  { background: var(--green); }
+    .pb-lc  { background: #ffa116; }
+    .pb-cf  { background: #1f8bcb; }
+    .pb-gfg { background: #2f8d46; }
+    .plat-handle-link { font-size: 0.65rem; color: var(--text-3); text-decoration: none; margin-left: 4px; }
+    .plat-handle-link:hover { color: var(--text-1); }
+    .plat-loading-dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      border: 1.5px solid var(--border); border-top-color: var(--green);
+      animation: spin .7s linear infinite; margin-left: 4px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .friend-card-footer {
+      padding: 10px 18px 14px;
+      display: flex; gap: 8px; align-items: center;
+      border-top: 1px solid var(--border-muted);
+    }
+    .grand-total-badge {
+      font-family: var(--font-mono); font-size: 0.72rem;
+      background: var(--green-dimmer); color: var(--green);
+      border: 1px solid rgba(0,255,136,.2); border-radius: 50px;
+      padding: 3px 12px;
+    }
+
+    /* Empty state */
+    .empty-friends {
+      text-align: center; padding: 56px 24px;
+      font-family: var(--font-mono); color: var(--text-3);
+      border: 1.5px dashed var(--border); border-radius: var(--radius-lg);
+    }
+    .empty-friends .ef-icon { font-size: 3rem; opacity: 0.4; margin-bottom: 14px; }
+    .empty-friends .ef-title { font-size: 1rem; color: var(--text-2); margin-bottom: 6px; }
+    .empty-friends .ef-sub   { font-size: 0.82rem; }
+
+    /* ── Platform Champions ── */
+    .champ-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-bottom: 40px;
+    }
+    @media (max-width: 860px) { .champ-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 480px) { .champ-grid { grid-template-columns: 1fr; } }
+
+    .champ-card {
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      overflow: hidden;
+      position: relative;
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+    .champ-card:hover { transform: translateY(-3px); }
+    .champ-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .champ-cp  { background: rgba(0,255,136,.05);  border-color: rgba(0,255,136,.25); }
+    .champ-cp::before  { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+    .champ-lc  { background: rgba(255,161,22,.05); border-color: rgba(255,161,22,.25); }
+    .champ-lc::before  { background: linear-gradient(90deg, transparent, #ffa116, transparent); }
+    .champ-cf  { background: rgba(31,139,203,.05); border-color: rgba(31,139,203,.25); }
+    .champ-cf::before  { background: linear-gradient(90deg, transparent, #1f8bcb, transparent); }
+    .champ-gfg { background: rgba(47,141,70,.05);  border-color: rgba(47,141,70,.25); }
+    .champ-gfg::before { background: linear-gradient(90deg, transparent, #2f8d46, transparent); }
+
+    .champ-plat-label {
+      font-family: var(--font-mono); font-size: 0.65rem;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      padding: 10px 16px 0; display: flex; align-items: center; gap: 6px;
+    }
+    .champ-plat-label .ci { font-size: 1rem; }
+    .champ-body { padding: 14px 16px 18px; text-align: center; }
+    .champ-crown { font-size: 1.6rem; line-height: 1; margin-bottom: 6px; }
+    .champ-avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      margin: 0 auto 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono); font-weight: 800; font-size: 1.3rem;
+      color: var(--bg-base);
+    }
+    .ca-cp  { background: linear-gradient(135deg, var(--green), var(--blue)); box-shadow: 0 0 18px rgba(0,255,136,.35); }
+    .ca-lc  { background: linear-gradient(135deg, #ffa116, #ff6b00);          box-shadow: 0 0 18px rgba(255,161,22,.35); }
+    .ca-cf  { background: linear-gradient(135deg, #1f8bcb, #0d5fa3);          box-shadow: 0 0 18px rgba(31,139,203,.35); }
+    .ca-gfg { background: linear-gradient(135deg, #2f8d46, #1a5c2c);          box-shadow: 0 0 18px rgba(47,141,70,.35); }
+    .champ-name { font-family: var(--font-mono); font-weight: 800; font-size: 0.95rem; color: var(--text-1); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .champ-count { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 900; line-height: 1; }
+    .cc-cp  { color: var(--green); }
+    .cc-lc  { color: #ffa116; }
+    .cc-cf  { color: #1f8bcb; }
+    .cc-gfg { color: #2f8d46; }
+    .champ-solved-lbl { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-3); margin-top: 2px; }
+    .champ-loading {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 8px; padding: 24px 0;
+      font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-3);
+    }
+    .champ-spinner {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid var(--border); border-top-color: var(--green);
+      animation: spin .8s linear infinite;
+    }
+    .champ-no-data { padding: 24px; text-align: center; font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-3); }
+    .champ-handle { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-3); margin-top: 4px; }
+    .champ-view-btn {
+      display: block; margin: 10px 16px 14px;
+      text-align: center; font-family: var(--font-mono); font-size: 0.72rem;
+      color: var(--text-3); text-decoration: none;
+      border: 1px solid var(--border-muted); border-radius: var(--radius);
+      padding: 5px 0; transition: border-color .15s, color .15s;
+    }
+    .champ-view-btn:hover { border-color: var(--border-hover); color: var(--text-1); }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="problems.html" class="nav-logo"><span class="bracket">[</span><span class="logo-text">CP_ARENA</span><span class="bracket">]</span></a>
+    <div class="nav-links">
+      <a href="problems.html" class="nav-link">Problems</a>
+      <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+      <a href="friends.html" class="nav-link active">Friends</a>
+    </div>
+    <div class="nav-right" id="nav-right"></div>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="friends-wrap">
+    <div class="page-header">
+      <div class="pre-title">// friends</div>
+      <h1>Friend Stats</h1>
+      <p>Search for users and track how many problems they've solved across all platforms.</p>
+    </div>
+
+    <!-- Platform Champions -->
+    <div class="section-heading" style="margin-bottom:16px">🏆 Platform Champions — #1 on each platform</div>
+    <div class="champ-grid" id="champ-grid">
+      <div class="champ-card champ-cp" id="champ-cp">
+        <div class="champ-plat-label" style="color:var(--green)"><span class="ci">⚡</span> CP Arena</div>
+        <div class="champ-body"><div class="champ-loading"><div class="champ-spinner"></div>Loading…</div></div>
+      </div>
+      <div class="champ-card champ-lc" id="champ-lc">
+        <div class="champ-plat-label" style="color:#ffa116"><span class="ci">🟡</span> LeetCode</div>
+        <div class="champ-body"><div class="champ-loading"><div class="champ-spinner" style="border-top-color:#ffa116"></div>Fetching…</div></div>
+      </div>
+      <div class="champ-card champ-cf" id="champ-cf">
+        <div class="champ-plat-label" style="color:#1f8bcb"><span class="ci">🔵</span> Codeforces</div>
+        <div class="champ-body"><div class="champ-loading"><div class="champ-spinner" style="border-top-color:#1f8bcb"></div>Fetching…</div></div>
+      </div>
+      <div class="champ-card champ-gfg" id="champ-gfg">
+        <div class="champ-plat-label" style="color:#2f8d46"><span class="ci">🟢</span> GeeksforGeeks</div>
+        <div class="champ-body"><div class="champ-loading"><div class="champ-spinner" style="border-top-color:#2f8d46"></div>Fetching…</div></div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-bar-wrap">
+      <input id="search-input" class="form-input" type="text" placeholder="Search by username…" autocomplete="off" oninput="onSearch()" />
+      <button class="btn btn-primary" onclick="onSearch()" id="search-btn"><span>Search</span></button>
+    </div>
+    <div id="search-results-list"></div>
+
+    <!-- Pinned friends -->
+    <div class="section-heading" id="friends-heading" style="display:none">Pinned Friends</div>
+    <div class="friends-grid" id="friends-grid"></div>
+    <div id="empty-friends-state" class="empty-friends" style="display:none">
+      <div class="ef-icon">👥</div>
+      <div class="ef-title">No friends pinned yet</div>
+      <div class="ef-sub">Search for a user above and pin them to track their stats here.</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="js/store.js"></script>
+<script src="js/auth.js"></script>
+<script>
+const me = Auth.requireLogin();
+
+/* ── NAV ── */
+(function(){
+  const r = document.getElementById('nav-right');
+  r.innerHTML = `<a href="profile.html" class="nav-user-pill" style="text-decoration:none">
+    <div class="nav-avatar">${me.username[0].toUpperCase()}</div><span>${me.username}</span></a>
+    <button class="nav-logout-btn" onclick="Auth.logout()">Logout</button>`;
+})();
+
+/* ── PINNED FRIENDS (localStorage) ── */
+const FRIENDS_KEY = 'cp_friends_' + me.id;
+function getPinned() { try { return JSON.parse(localStorage.getItem(FRIENDS_KEY)) || []; } catch { return []; } }
+function setPinned(ids) { localStorage.setItem(FRIENDS_KEY, JSON.stringify(ids)); }
+function isPinned(uid) { return getPinned().includes(uid); }
+function pin(uid) {
+  const arr = getPinned(); if (!arr.includes(uid)) { arr.push(uid); setPinned(arr); }
+  renderFriendsGrid();
+  toast('Friend pinned!', 'success');
+}
+function unpin(uid) {
+  setPinned(getPinned().filter(id => id !== uid));
+  renderFriendsGrid();
+  toast('Removed from friends.', 'info');
+}
+
+/* ── SEARCH ── */
+function onSearch() {
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  const list = document.getElementById('search-results-list');
+  if (!q) { list.innerHTML = ''; return; }
+  const users = Store.getUsers().filter(u =>
+    u.role !== 'admin' && u.id !== me.id && u.username.toLowerCase().includes(q)
+  );
+  if (!users.length) {
+    list.innerHTML = `<div class="no-results">// No users found matching "<strong>${esc(q)}</strong>"</div>`;
+    return;
+  }
+  list.innerHTML = users.slice(0, 10).map(u => {
+    const pinned = isPinned(u.id);
+    const stats = Store.getUserStats(u.id);
+    return `<div class="user-result-row" onclick="void(0)">
+      <div class="user-result-avatar">${u.username[0].toUpperCase()}</div>
+      <div class="user-result-info">
+        <div class="user-result-name">${esc(u.username)}</div>
+        <div class="user-result-sub">CP Arena: ${stats.totalSolved} solved · Score: ${stats.score}
+          ${u.cfHandle  ? ' · CF: ' + esc(u.cfHandle)  : ''}
+          ${u.lcHandle  ? ' · LC: ' + esc(u.lcHandle)  : ''}
+          ${u.gfgHandle ? ' · GFG: ' + esc(u.gfgHandle): ''}
+        </div>
+      </div>
+      ${pinned
+        ? `<span class="pinned-label">✓ Pinned</span>
+           <button class="btn btn-outline btn-sm" onclick="unpin('${u.id}');onSearch()">Unpin</button>`
+        : `<button class="btn btn-primary btn-sm" onclick="pin('${u.id}');onSearch()">+ Pin</button>`
+      }
+      <a href="profile.html?user=${encodeURIComponent(u.username)}" class="btn btn-outline btn-sm">Profile ↗</a>
+    </div>`;
+  }).join('');
+}
+
+/* ── FRIENDS GRID ── */
+function renderFriendsGrid() {
+  const pinned = getPinned();
+  const heading = document.getElementById('friends-heading');
+  const grid    = document.getElementById('friends-grid');
+  const empty   = document.getElementById('empty-friends-state');
+
+  if (!pinned.length) {
+    heading.style.display = 'none';
+    grid.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  heading.style.display = '';
+  empty.style.display   = 'none';
+
+  const users = Store.getUsers();
+  grid.innerHTML = pinned.map(uid => {
+    const u = users.find(x => x.id === uid);
+    if (!u) return '';
+    const stats = Store.getUserStats(u.id);
+    const cardId = 'fc_' + uid;
+    return `<div class="friend-card" id="${cardId}">
+      <div class="friend-card-header">
+        <div class="friend-avatar">${u.username[0].toUpperCase()}</div>
+        <div>
+          <div class="friend-name">${esc(u.username)}</div>
+          <div class="friend-joined">Joined ${new Date(u.createdAt).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>
+        </div>
+        <button class="friend-remove-btn" title="Unpin" onclick="unpin('${uid}')">✕</button>
+      </div>
+      <div class="friend-platforms" id="plats_${uid}">
+        ${buildCPRow(stats.totalSolved, null)}
+        ${u.lcHandle  ? buildExtRow('lc',  u.lcHandle,  null) : ''}
+        ${u.cfHandle  ? buildExtRow('cf',  u.cfHandle,  null) : ''}
+        ${u.gfgHandle ? buildExtRow('gfg', u.gfgHandle, null) : ''}
+      </div>
+      <div class="friend-card-footer" id="footer_${uid}">
+        <span class="grand-total-badge">🏆 Total: <span id="gt_${uid}">${stats.totalSolved}</span></span>
+        <a href="profile.html?user=${encodeURIComponent(u.username)}" class="btn btn-outline btn-sm" style="margin-left:auto">View Profile ↗</a>
+      </div>
+    </div>`;
+  }).join('');
+
+  /* Fetch external platform stats for each friend asynchronously */
+  pinned.forEach(uid => {
+    const u = users.find(x => x.id === uid);
+    if (!u) return;
+    const cpSolved = Store.getUserStats(u.id).totalSolved;
+    const totals = { cp: cpSolved, lc: 0, cf: 0, gfg: 0 };
+
+    function refreshGrandTotal() {
+      const el = document.getElementById('gt_' + uid);
+      if (el) el.textContent = totals.cp + totals.lc + totals.cf + totals.gfg;
+    }
+
+    if (u.lcHandle) fetchLC(uid, u.lcHandle, totals, refreshGrandTotal, cpSolved);
+    if (u.cfHandle) fetchCF(uid, u.cfHandle, totals, refreshGrandTotal, cpSolved);
+    if (u.gfgHandle) fetchGFG(uid, u.gfgHandle, totals, refreshGrandTotal, cpSolved);
+  });
+}
+
+/* Build a platform row HTML (count=null => loading spinner) */
+function buildCPRow(count, max) {
+  const pct = max ? Math.round(count/max*100) : 50;
+  return `<div class="plat-row">
+    <div class="plat-icon pi-cp">CP</div>
+    <span class="plat-label">CP Arena</span>
+    <span class="plat-count-val pc-cp">${count}</span>
+    <div class="plat-bar-bg"><div class="plat-bar-fill pb-cp" style="width:${pct}%"></div></div>
+  </div>`;
+}
+
+function buildExtRow(plat, handle, count) {
+  const icons   = { lc:'LC', cf:'CF', gfg:'GFG' };
+  const labels  = { lc:'LeetCode', cf:'Codeforces', gfg:'GeeksforGeeks' };
+  const links   = {
+    lc: `https://leetcode.com/${handle}`,
+    cf: `https://codeforces.com/profile/${handle}`,
+    gfg:`https://auth.geeksforgeeks.org/user/${handle}`
+  };
+  const loading = count === null;
+  return `<div class="plat-row" id="pr_${plat}_${handle.replace(/[^a-z0-9]/gi,'_')}">
+    <div class="plat-icon pi-${plat}">${icons[plat]}</div>
+    <span class="plat-label">${labels[plat]}</span>
+    <span class="plat-count-val pc-${plat}" id="pv_${plat}_${handle.replace(/[^a-z0-9]/gi,'_')}">
+      ${loading ? '<span class="plat-loading-dot"></span>' : count}
+    </span>
+    <div class="plat-bar-bg"><div class="plat-bar-fill pb-${plat}" id="pb2_${plat}_${handle.replace(/[^a-z0-9]/gi,'_')}" style="width:${loading?'0':30}%"></div></div>
+    <a class="plat-handle-link" href="${links[plat]}" target="_blank">${esc(handle)} ↗</a>
+  </div>`;
+}
+
+function updatePlatRow(plat, handle, count) {
+  const slug = handle.replace(/[^a-z0-9]/gi,'_');
+  const el = document.getElementById('pv_' + plat + '_' + slug);
+  const bar = document.getElementById('pb2_' + plat + '_' + slug);
+  if (el)  el.textContent = count;
+  if (bar) bar.style.width = Math.min(count * 2, 100) + '%';
+}
+
+/* ── Async fetchers ── */
+async function fetchLC(uid, handle, totals, refresh, cpSolved) {
+  try {
+    const r = await fetch(`https://alfa-leetcode-api.onrender.com/${encodeURIComponent(handle)}/profile`, {signal: AbortSignal.timeout(20000)});
+    const d = await r.json();
+    const n = d.totalSolved ?? 0;
+    totals.lc = n;
+    updatePlatRow('lc', handle, n);
+    refresh();
+  } catch {
+    updatePlatRow('lc', handle, '?');
+  }
+}
+
+async function fetchCF(uid, handle, totals, refresh, cpSolved) {
+  try {
+    const r = await fetch(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}&from=1&count=500`);
+    const d = await r.json();
+    if (d.status === 'OK') {
+      const seen = new Set();
+      d.result.filter(s => s.verdict === 'OK').forEach(s => seen.add(`${s.problem.contestId}-${s.problem.index}`));
+      totals.cf = seen.size;
+      updatePlatRow('cf', handle, seen.size);
+      refresh();
+    } else updatePlatRow('cf', handle, '?');
+  } catch {
+    updatePlatRow('cf', handle, '?');
+  }
+}
+
+async function fetchGFG(uid, handle, totals, refresh, cpSolved) {
+  try {
+    const r = await fetch(`https://geeks-for-geeks-stats-api-neeraj.vercel.app/?userName=${encodeURIComponent(handle)}`);
+    const d = await r.json();
+    const n = d.totalProblemsSolved || 0;
+    totals.gfg = n;
+    updatePlatRow('gfg', handle, n);
+    refresh();
+  } catch {
+    updatePlatRow('gfg', handle, '?');
+  }
+}
+
+/* ── ENTER key in search ── */
+document.getElementById('search-input').addEventListener('keydown', e => { if (e.key === 'Enter') onSearch(); });
+
+/* ── Utilities ── */
+function toast(msg, type='info') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ── PLATFORM CHAMPIONS ── */
+function renderChampCard(plat, user, count, handle) {
+  const cfg = {
+    cp:  { label:'CP Arena',      icon:'⚡', ac:'ca-cp',  cc:'cc-cp',  link: u => `profile.html?user=${encodeURIComponent(u)}` },
+    lc:  { label:'LeetCode',      icon:'🟡', ac:'ca-lc',  cc:'cc-lc',  link: (u,h) => `https://leetcode.com/${h}` },
+    cf:  { label:'Codeforces',    icon:'🔵', ac:'ca-cf',  cc:'cc-cf',  link: (u,h) => `https://codeforces.com/profile/${h}` },
+    gfg: { label:'GeeksforGeeks', icon:'🟢', ac:'ca-gfg', cc:'cc-gfg', link: (u,h) => `https://auth.geeksforgeeks.org/user/${h}` },
+  };
+  const c = cfg[plat];
+  const card = document.getElementById('champ-' + plat);
+  if (!card) return;
+  if (!user) {
+    card.querySelector('.champ-body').innerHTML = `<div class="champ-no-data">No data yet.<br>Link ${c.label} handles in your profile.</div>`;
+    return;
+  }
+  const profileUrl = `profile.html?user=${encodeURIComponent(user)}`;
+  const extUrl     = c.link(user, handle);
+  card.querySelector('.champ-body').innerHTML = `
+    <div class="champ-crown">👑</div>
+    <div class="champ-avatar ${c.ac}">${user[0].toUpperCase()}</div>
+    <div class="champ-name">${esc(user)}</div>
+    <div class="champ-count ${c.cc}">${count}</div>
+    <div class="champ-solved-lbl">problems solved</div>
+    ${handle && plat !== 'cp' ? `<div class="champ-handle">${esc(handle)}</div>` : ''}
+  `;
+  card.innerHTML += `<a class="champ-view-btn" href="${profileUrl}">View Profile ↗</a>`;
+}
+
+/* CP Arena champion — instant from local data */
+(function() {
+  const lb = Store.getLeaderboard();
+  if (!lb.length) { renderChampCard('cp', null, 0, ''); return; }
+  const top = lb[0];
+  renderChampCard('cp', top.username, top.solved, '');
+})();
+
+/* External champions — race all users with handles */
+(async function() {
+  const allUsers = Store.getUsers().filter(u => u.role !== 'admin');
+
+  /* LeetCode */
+  const lcUsers = allUsers.filter(u => u.lcHandle);
+  if (!lcUsers.length) {
+    renderChampCard('lc', null, 0, '');
+  } else {
+    let best = null, bestCount = -1, bestHandle = '';
+    await Promise.allSettled(lcUsers.map(async u => {
+      try {
+        const r = await fetch(`https://alfa-leetcode-api.onrender.com/${encodeURIComponent(u.lcHandle)}/profile`, {signal: AbortSignal.timeout(18000)});
+        const d = await r.json();
+        const n = d.totalSolved ?? 0;
+        if (n > bestCount) { bestCount = n; best = u.username; bestHandle = u.lcHandle; }
+      } catch {}
+    }));
+    renderChampCard('lc', best, bestCount < 0 ? 0 : bestCount, bestHandle);
+  }
+
+  /* Codeforces */
+  const cfUsers = allUsers.filter(u => u.cfHandle);
+  if (!cfUsers.length) {
+    renderChampCard('cf', null, 0, '');
+  } else {
+    let best = null, bestCount = -1, bestHandle = '';
+    await Promise.allSettled(cfUsers.map(async u => {
+      try {
+        const r = await fetch(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(u.cfHandle)}&from=1&count=500`);
+        const d = await r.json();
+        if (d.status === 'OK') {
+          const seen = new Set();
+          d.result.filter(s => s.verdict === 'OK').forEach(s => seen.add(`${s.problem.contestId}-${s.problem.index}`));
+          if (seen.size > bestCount) { bestCount = seen.size; best = u.username; bestHandle = u.cfHandle; }
+        }
+      } catch {}
+    }));
+    renderChampCard('cf', best, bestCount < 0 ? 0 : bestCount, bestHandle);
+  }
+
+  /* GFG */
+  const gfgUsers = allUsers.filter(u => u.gfgHandle);
+  if (!gfgUsers.length) {
+    renderChampCard('gfg', null, 0, '');
+  } else {
+    let best = null, bestCount = -1, bestHandle = '';
+    await Promise.allSettled(gfgUsers.map(async u => {
+      try {
+        const r = await fetch(`https://geeks-for-geeks-stats-api-neeraj.vercel.app/?userName=${encodeURIComponent(u.gfgHandle)}`);
+        const d = await r.json();
+        const n = parseInt(d.totalProblemsSolved) || 0;
+        if (n > bestCount) { bestCount = n; best = u.username; bestHandle = u.gfgHandle; }
+      } catch {}
+    }));
+    renderChampCard('gfg', best, bestCount < 0 ? 0 : bestCount, bestHandle);
+  }
+})();
+
+/* ── INIT ── */
+renderFriendsGrid();
+</script>
+</body>
+</html>
