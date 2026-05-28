@@ -13,13 +13,76 @@
 
     /* ── Search bar ── */
     .search-bar-wrap {
-      display: flex; gap: 10px; margin-bottom: 28px;
+      display: flex; gap: 10px; margin-bottom: 28px; align-items: center; flex-wrap: wrap;
     }
     .search-bar-wrap .form-input {
-      flex: 1; font-size: 1rem; padding: 12px 18px;
+      flex: 1; font-size: 1rem; padding: 12px 18px; min-width: 160px;
     }
     #search-results-list {
       margin-bottom: 32px;
+    }
+
+    /* ── Platform filter dropdown ── */
+    .plat-filter-wrap {
+      position: relative; flex-shrink: 0;
+    }
+    .plat-filter-btn {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 11px 16px;
+      font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-2);
+      cursor: pointer; transition: border-color var(--transition), box-shadow var(--transition);
+      white-space: nowrap; user-select: none;
+    }
+    .plat-filter-btn:hover, .plat-filter-btn.open {
+      border-color: var(--border-hover); box-shadow: var(--glow-green); color: var(--text-1);
+    }
+    .plat-filter-btn .pf-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      transition: background .2s;
+    }
+    .plat-filter-btn .pf-arrow {
+      font-size: 0.65rem; color: var(--text-3); margin-left: 4px;
+      transition: transform .2s;
+    }
+    .plat-filter-btn.open .pf-arrow { transform: rotate(180deg); }
+    .plat-dropdown {
+      position: absolute; top: calc(100% + 8px); right: 0;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); min-width: 190px;
+      overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,.45);
+      z-index: 999; opacity: 0; transform: translateY(-6px) scale(0.97);
+      pointer-events: none;
+      transition: opacity .15s ease, transform .15s ease;
+    }
+    .plat-dropdown.open {
+      opacity: 1; transform: translateY(0) scale(1); pointer-events: all;
+    }
+    .plat-dropdown-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; font-family: var(--font-mono); font-size: 0.82rem;
+      color: var(--text-2); cursor: pointer;
+      transition: background .12s, color .12s;
+      border-bottom: 1px solid var(--border-muted);
+    }
+    .plat-dropdown-item:last-child { border-bottom: none; }
+    .plat-dropdown-item:hover { background: var(--bg-hover); color: var(--text-1); }
+    .plat-dropdown-item.selected { color: var(--text-1); background: rgba(0,255,136,.05); }
+    .plat-dropdown-item .pdi-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .plat-dropdown-item .pdi-check {
+      margin-left: auto; font-size: 0.8rem; color: var(--green);
+      opacity: 0; transition: opacity .12s;
+    }
+    .plat-dropdown-item.selected .pdi-check { opacity: 1; }
+    /* badge on search results showing the active filter */
+    .filter-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-mono); font-size: 0.72rem;
+      background: rgba(0,255,136,.06); border: 1px solid rgba(0,255,136,.2);
+      color: var(--text-2); border-radius: 50px; padding: 3px 12px;
+      margin-bottom: 10px;
     }
 
     /* ── User result row ── */
@@ -278,6 +341,38 @@
     <!-- Search -->
     <div class="search-bar-wrap">
       <input id="search-input" class="form-input" type="text" placeholder="Search by username…" autocomplete="off" oninput="onSearch()" />
+
+      <!-- Platform filter dropdown -->
+      <div class="plat-filter-wrap" id="plat-filter-wrap">
+        <div class="plat-filter-btn" id="plat-filter-btn" onclick="togglePlatDropdown()">
+          <span class="pf-dot" id="pf-dot" style="background:var(--green)"></span>
+          <span id="pf-label">All Platforms</span>
+          <span class="pf-arrow">▼</span>
+        </div>
+        <div class="plat-dropdown" id="plat-dropdown">
+          <div class="plat-dropdown-item selected" data-plat="all" onclick="selectPlat('all',this)">
+            <span class="pdi-dot" style="background:var(--green)"></span> All Platforms
+            <span class="pdi-check">✓</span>
+          </div>
+          <div class="plat-dropdown-item" data-plat="cp" onclick="selectPlat('cp',this)">
+            <span class="pdi-dot" style="background:var(--green)"></span> ⚡ CP Arena
+            <span class="pdi-check">✓</span>
+          </div>
+          <div class="plat-dropdown-item" data-plat="cf" onclick="selectPlat('cf',this)">
+            <span class="pdi-dot" style="background:#1f8bcb"></span> 🔵 Codeforces
+            <span class="pdi-check">✓</span>
+          </div>
+          <div class="plat-dropdown-item" data-plat="lc" onclick="selectPlat('lc',this)">
+            <span class="pdi-dot" style="background:#ffa116"></span> 🟡 LeetCode
+            <span class="pdi-check">✓</span>
+          </div>
+          <div class="plat-dropdown-item" data-plat="gfg" onclick="selectPlat('gfg',this)">
+            <span class="pdi-dot" style="background:#2f8d46"></span> 🟢 GeeksforGeeks
+            <span class="pdi-check">✓</span>
+          </div>
+        </div>
+      </div>
+
       <button class="btn btn-primary" onclick="onSearch()" id="search-btn"><span>Search</span></button>
     </div>
     <div id="search-results-list"></div>
@@ -323,19 +418,70 @@ function unpin(uid) {
   toast('Removed from friends.', 'info');
 }
 
+/* ── PLATFORM FILTER ── */
+const PLAT_META = {
+  all: { label: 'All Platforms', dot: 'var(--green)',  key: null },
+  cp:  { label: 'CP Arena',      dot: 'var(--green)',  key: null     /* always present */ },
+  cf:  { label: 'Codeforces',    dot: '#1f8bcb',       key: 'cfHandle' },
+  lc:  { label: 'LeetCode',      dot: '#ffa116',       key: 'lcHandle' },
+  gfg: { label: 'GeeksforGeeks', dot: '#2f8d46',       key: 'gfgHandle' },
+};
+let activePlat = 'all';
+
+function togglePlatDropdown() {
+  const btn = document.getElementById('plat-filter-btn');
+  const dd  = document.getElementById('plat-dropdown');
+  btn.classList.toggle('open');
+  dd.classList.toggle('open');
+}
+function selectPlat(plat, el) {
+  activePlat = plat;
+  /* update UI */
+  document.querySelectorAll('.plat-dropdown-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  const meta = PLAT_META[plat];
+  document.getElementById('pf-label').textContent = meta.label;
+  document.getElementById('pf-dot').style.background = meta.dot;
+  /* close dropdown */
+  document.getElementById('plat-filter-btn').classList.remove('open');
+  document.getElementById('plat-dropdown').classList.remove('open');
+  onSearch();
+}
+/* close dropdown on outside click */
+document.addEventListener('click', e => {
+  if (!document.getElementById('plat-filter-wrap').contains(e.target)) {
+    document.getElementById('plat-filter-btn').classList.remove('open');
+    document.getElementById('plat-dropdown').classList.remove('open');
+  }
+});
+
 /* ── SEARCH ── */
 function onSearch() {
   const q = document.getElementById('search-input').value.trim().toLowerCase();
   const list = document.getElementById('search-results-list');
   if (!q) { list.innerHTML = ''; return; }
-  const users = Store.getUsers().filter(u =>
+
+  const platKey = PLAT_META[activePlat].key; /* e.g. 'cfHandle', or null */
+  let users = Store.getUsers().filter(u =>
     u.role !== 'admin' && u.id !== me.id && u.username.toLowerCase().includes(q)
   );
+  /* Apply platform filter */
+  if (activePlat === 'cp') {
+    /* everyone on CP Arena — no extra filter */
+  } else if (platKey) {
+    users = users.filter(u => !!u[platKey]);
+  }
+
+  /* Badge showing active filter */
+  const filterBadge = activePlat !== 'all'
+    ? `<div class="filter-badge"><span style="width:7px;height:7px;border-radius:50%;display:inline-block;background:${PLAT_META[activePlat].dot}"></span>Filtering by: <strong>${PLAT_META[activePlat].label}</strong></div>`
+    : '';
+
   if (!users.length) {
-    list.innerHTML = `<div class="no-results">// No users found matching "<strong>${esc(q)}</strong>"</div>`;
+    list.innerHTML = filterBadge + `<div class="no-results">// No users found matching "<strong>${esc(q)}</strong>"${activePlat !== 'all' ? ` on ${PLAT_META[activePlat].label}` : ''}</div>`;
     return;
   }
-  list.innerHTML = users.slice(0, 10).map(u => {
+  list.innerHTML = filterBadge + users.slice(0, 10).map(u => {
     const pinned = isPinned(u.id);
     const stats = Store.getUserStats(u.id);
     return `<div class="user-result-row" onclick="void(0)">
